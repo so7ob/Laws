@@ -1,0 +1,939 @@
+// منصة التشريعات اليمنية - Prisma Schema
+// Yemeni Legislation Platform Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ المراجع (Reference Data) ============
+
+model LegislationType {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nameAr      String
+  nameEn      String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  legislations Legislation[]
+}
+
+model IssuingAuthority {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nameAr      String
+  nameEn      String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  legislations Legislation[]
+}
+
+model Subject {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nameAr      String
+  nameEn      String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  parentSubjectId String?
+  parent      Subject?  @relation("SubjectHierarchy", fields: [parentSubjectId], references: [id])
+  children    Subject[] @relation("SubjectHierarchy")
+  legislationSubjects LegislationSubject[]
+
+  @@index([parentSubjectId])
+}
+
+model Classification {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  nameAr      String
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  legislationClassifications LegislationClassification[]
+}
+
+// ============ التشريعات (Legislations) ============
+
+model Legislation {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  officialTitle     String
+  shortTitle        String?
+  typeId            String
+  number            String?
+  year              Int?
+  authorityId       String
+  issueDate         DateTime?
+  publicationDate   DateTime?
+  effectiveDate     DateTime?
+  registryDate      DateTime?
+  legalStatus       String   @default("active") // active, amended, repealed, archived
+  workflowStatus    String   @default("draft") // draft, in_review, approved, published, archived
+  verificationLevel String   @default("unverified") // unverified, imported, reviewed, verified
+  preamble          String?
+  isPreamble        Boolean  @default(false)
+  hasAmendments     Boolean  @default(false)
+  parentLegislationId String?
+  parent            Legislation? @relation("LegislationAmendments", fields: [parentLegislationId], references: [id])
+  amendmentsFor     Legislation[] @relation("LegislationAmendments")
+  structureNodes    StructureNode[]
+  articles          Article[]
+  attachments       Attachment[]
+  relations         Relation[]      @relation("RelationFrom")
+  reverseRelations  Relation[]      @relation("RelationTo")
+  sources           SourceLegislation[]
+  officialJournals  OfficialJournalEntry[]
+  imports           ImportOperation[]
+  reports           Report[]
+  favorites         Favorite[]
+  notes             Note[]
+  savedSearches     SavedSearch[]
+  participations    Participation[]
+  auditLogs         AuditLog[]
+  correctionDrafts  CorrectionDraft[]
+  amendmentDocsTarget AmendmentDocument[] @relation("AmendDocTarget")
+  amendmentDocsSource AmendmentDocument[] @relation("AmendDocSource")
+  editRev           Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  type              LegislationType   @relation(fields: [typeId], references: [id])
+  authority        IssuingAuthority  @relation(fields: [authorityId], references: [id])
+  workflows         WorkflowTransition[]
+  legislationSubjects LegislationSubject[]
+  legislationClassifications LegislationClassification[]
+
+  @@index([legalStatus])
+  @@index([workflowStatus])
+  @@index([year])
+  @@index([typeId])
+  @@index([authorityId])
+}
+
+model LegislationSubject {
+  legislationId String
+  subjectId     String
+  legislation   Legislation @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+  subject       Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  @@id([legislationId, subjectId])
+}
+
+model LegislationClassification {
+  legislationId    String
+  classificationId String
+  legislation      Legislation    @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+  classification   Classification @relation(fields: [classificationId], references: [id], onDelete: Cascade)
+  @@id([legislationId, classificationId])
+}
+
+// ============ البنية القانونية (Legal Structure) ============
+
+model StructureNode {
+  id              String   @id @default(cuid())
+  legislationId   String
+  parentNodeId     String?
+  parent          StructureNode? @relation("StructureTree", fields: [parentNodeId], references: [id])
+  children        StructureNode[] @relation("StructureTree")
+  nodeType        String   // book, part, chapter, section, subsection, title
+  number          String?
+  title           String?
+  sortOrder       Int      @default(0)
+  articles        Article[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  legislation     Legislation @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+
+  @@index([legislationId])
+  @@index([parentNodeId])
+}
+
+// ============ المواد (Articles) ============
+
+model Article {
+  id              String   @id @default(cuid())
+  legislationId  String
+  nodeId          String?
+  node            StructureNode? @relation(fields: [nodeId], references: [id])
+  publishedNumber String?
+  sortOrder       Int      @default(0)
+  isDuplicate     Boolean  @default(false)
+  duplicateLabel  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  versions        ArticleVersion[]
+  favorites       Favorite[]
+  notes           Note[]
+  amendmentOperations AmendmentOperation[]
+  correctionDrafts CorrectionDraft[]
+
+  legislation     Legislation @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+
+  @@index([legislationId])
+  @@index([nodeId])
+  @@index([publishedNumber])
+}
+
+model ArticleVersion {
+  id              String   @id @default(cuid())
+  articleId       String
+  versionNo       Int      @default(1)
+  textContent     String
+  rawText         String?
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  changeReason    String?
+  changeType      String   @default("initial") // initial, amended, added, repealed, renumbered, corrected
+  isCurrent       Boolean  @default(true)
+  isFuture        Boolean  @default(false)
+  sourceId       String?
+  source          Source? @relation(fields: [sourceId], references: [id])
+  amendmentOperationId String?
+  amendmentOp     AmendmentOperation? @relation(fields: [amendmentOperationId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  article         Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@index([effectiveFrom])
+  @@index([effectiveTo])
+  @@index([isCurrent])
+}
+
+// ============ وثائق التعديل (Amendment Documents) ============
+
+model AmendmentDocument {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  number          String?
+  year            Int?
+  targetLegislationId String
+  sourceLegislationId String?
+  operationCount  Int      @default(0)
+  status          String   @default("draft") // draft, in_review, approved, applied, rejected, archived
+  issueDate       DateTime?
+  effectiveDate   DateTime?
+  description     String?
+  reviewNotes     String?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  appliedAt       DateTime?
+  appliedById     String?
+  editRev        Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  targetLegislation Legislation @relation("AmendDocTarget", fields: [targetLegislationId], references: [id])
+  sourceLegislation Legislation? @relation("AmendDocSource", fields: [sourceLegislationId], references: [id])
+  reviewedBy      User? @relation("AmendReviewer", fields: [reviewedById], references: [id])
+  appliedBy       User? @relation("AmendApplier", fields: [appliedById], references: [id])
+  operations       AmendmentOperation[]
+  auditLogs        AuditLog[]
+
+  @@index([targetLegislationId])
+  @@index([status])
+  @@index([year])
+}
+
+model AmendmentOperation {
+  id              String   @id @default(cuid())
+  documentId      String
+  operationType   String   // replace, add, delete_part, repeal, renumber, correct, substitute_phrase
+  targetArticleId String?
+  nodePositionId  String?
+  sortOrder       Int      @default(0)
+  oldText         String?
+  newText         String?
+  newArticleNumber String?
+  isDuplicate     Boolean  @default(false)
+  duplicateLabel  String?
+  basis           String?
+  effectDate      DateTime?
+  reason          String?
+  applied         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  document        AmendmentDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  targetArticle  Article? @relation(fields: [targetArticleId], references: [id])
+  impacts         ArticleVersion[]
+  auditLogs       AuditLog[]
+
+  @@index([documentId])
+  @@index([operationType])
+}
+
+model CorrectionDraft {
+  id              String   @id @default(cuid())
+  legislationId  String
+  targetArticleId String?
+  attachmentId    String?
+  targetType      String   // preamble, article, attachment
+  currentContent  String?
+  proposedContent String
+  reason          String?
+  effectDate      DateTime?
+  status          String   @default("draft") // draft, approved, published, rejected
+  createdBy       String?
+  reviewedBy      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  legislation     Legislation @relation(fields: [legislationId], references: [id])
+  article         Article? @relation(fields: [targetArticleId], references: [id])
+  attachment      Attachment? @relation(fields: [attachmentId], references: [id])
+
+  @@index([legislationId])
+  @@index([status])
+}
+
+// ============ الملاحق (Attachments) ============
+
+model Attachment {
+  id              String   @id @default(cuid())
+  legislationId  String
+  title           String
+  attachmentType  String   // executive_regulation, table, form, annex, map, tariff, list, correction
+  contentType     String   // text, table, file
+  version         Int      @default(1)
+  status          String   @default("draft") // draft, in_review, published, archived
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  textContent     String?
+  tableContent    String?  // JSON {"columns":[],"rows":[]}
+  fileId          String?
+  sortOrder       Int      @default(0)
+  editRev         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  legislation     Legislation @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+  file            FileAsset? @relation(fields: [fileId], references: [id])
+  versions        AttachmentVersion[]
+  correctionDrafts CorrectionDraft[]
+  auditLogs       AuditLog[]
+
+  @@index([legislationId])
+  @@index([attachmentType])
+  @@index([status])
+}
+
+model AttachmentVersion {
+  id              String   @id @default(cuid())
+  attachmentId    String
+  versionNo       Int
+  title           String
+  textContent     String?
+  tableContent    String?
+  fileId          String?
+  status          String   @default("draft")
+  changeReason    String?
+  effectiveFrom   DateTime?
+  effectiveTo     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  attachment      Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+
+  @@index([attachmentId])
+}
+
+// ============ العلاقات (Relations) ============
+
+model Relation {
+  id              String   @id @default(cuid())
+  fromLegislationId String
+  toLegislationId String
+  relationType    String   // amends, repeals, implements, based_on, refers_to, corrects, related_subject
+  scope           String?  // article_id, all
+  effectDate      DateTime?
+  evidence        String?
+  status          String   @default("draft") // draft, in_review, published, rejected
+  rejectionReason String?
+  editRev         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  fromLegislation Legislation @relation("RelationFrom", fields: [fromLegislationId], references: [id])
+  toLegislation   Legislation @relation("RelationTo", fields: [toLegislationId], references: [id])
+  auditLogs       AuditLog[]
+
+  @@index([fromLegislationId])
+  @@index([toLegislationId])
+  @@index([relationType])
+  @@index([status])
+}
+
+// ============ المصادر (Sources) ============
+
+model Source {
+  id              String   @id @default(cuid())
+  name            String
+  originalName    String
+  mimeType        String   @default("application/octet-stream")
+  size            Int      @default(0)
+  checksum        String?
+  receivedAt      DateTime @default(now())
+  sourceEntity    String?
+  pageCount       Int?
+  extractionResult String?
+  verificationLevel String @default("unverified")
+  storageKey     String
+  isDeleted      Boolean  @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  legislationSources SourceLegislation[]
+  articleVersions    ArticleVersion[]
+  fileAsset          FileAsset?
+}
+
+model SourceLegislation {
+  id              String   @id @default(cuid())
+  sourceId        String
+  legislationId  String
+  role            String   // extraction, evidence, display, download
+  isPrimary       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  source          Source @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  legislation     Legislation @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId])
+  @@index([legislationId])
+}
+
+model FileAsset {
+  id              String   @id @default(cuid())
+  sourceId        String?  @unique
+  filename        String
+  originalName    String
+  mimeType        String
+  size            Int
+  storageKey      String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  source          Source?  @relation(fields: [sourceId], references: [id])
+  attachments     Attachment[]
+}
+
+model OfficialJournalEntry {
+  id              String   @id @default(cuid())
+  legislationId  String
+  journalNumber   String?
+  issueNumber     String?
+  pageFrom        Int?
+  pageTo          Int?
+  publicationDate DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  legislation     Legislation @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+
+  @@index([legislationId])
+}
+
+// ============ الاستيراد (Imports) ============
+
+model ImportOperation {
+  id              String   @id @default(cuid())
+  legislationId  String?
+  batchKey        String?
+  fileName        String
+  fileType        String
+  fileSize        Int
+  checksum        String?
+  status          String   @default("uploaded") // uploaded, extracting, ready_review, reviewed, completed, failed, canceled
+  progress        Int      @default(0)
+  extractionText  String?
+  previewTree     String?
+  notes           String?
+  errorMessage    String?
+  sourceId        String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  legislation     Legislation? @relation(fields: [legislationId], references: [id])
+  auditLogs       AuditLog[]
+
+  @@index([status])
+  @@index([batchKey])
+}
+
+// ============ الحساب والصلاحيات (Accounts & Permissions) ============
+
+model User {
+  id              String   @id @default(cuid())
+  username        String   @unique
+  email           String   @unique
+  fullName        String
+  passwordHash    String
+  isActive        Boolean  @default(true)
+  isLocked        Boolean  @default(false)
+  lastLoginAt     DateTime?
+  failedAttempts  Int      @default(0)
+  lockedUntil    DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  roles           UserRole[]
+  directPermissions PermissionGrant[]
+  auditLogs       AuditLog[]
+  favorites       Favorite[]
+  notes           Note[]
+  savedSearches   SavedSearch[]
+  participations  Participation[]
+  reviews         AmendmentDocument[] @relation("AmendReviewer")
+  applications    AmendmentDocument[] @relation("AmendApplier")
+  recoveryRequests AccountRecovery[]
+}
+
+model Role {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  nameAr          String
+  description     String?
+  isSystem        Boolean  @default(false)
+  powerLevel      Int      @default(0)
+  isProtected     Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users           UserRole[]
+  permissions     RolePermission[]
+  auditLogs       AuditLog[]
+}
+
+model UserRole {
+  id              String   @id @default(cuid())
+  userId          String
+  roleId          String
+  assignedAt      DateTime @default(now())
+  assignedBy      String?
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role            Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model Permission {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  resource        String
+  action          String   // view, create, edit, delete, disable, enable, review, reset, approve, publish, archive, export, assign
+  description     String?
+  createdAt       DateTime @default(now())
+
+  rolePermissions RolePermission[]
+  directGrants    PermissionGrant[]
+}
+
+model RolePermission {
+  id              String   @id @default(cuid())
+  roleId          String
+  permissionId    String
+  createdAt       DateTime @default(now())
+
+  role            Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission      Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+}
+
+model PermissionGrant {
+  id              String   @id @default(cuid())
+  userId          String
+  permissionId    String
+  isAllowed       Boolean  @default(true) // true=allow, false=deny
+  reason          String?
+  createdAt       DateTime @default(now())
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission      Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([userId, permissionId])
+}
+
+model AccountRecovery {
+  id              String   @id @default(cuid())
+  userId          String
+  requestReason   String
+  reviewStatus    String   @default("pending") // pending, approved, rejected
+  reviewedById    String?
+  reviewedAt      DateTime?
+  reviewReason    String?
+  tokenHash       String?
+  tokenExpiresAt  DateTime?
+  tokenUsedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([reviewStatus])
+}
+
+// ============ سياسات العمليات (Operation Policies) ============
+
+model OperationPolicy {
+  id              String   @id @default(cuid())
+  code            String   @unique
+  nameAr          String
+  description     String?
+  category        String   // deletion, editing, review, publishing, activation
+  isActive        Boolean  @default(true)
+  enforcementLevel String @default("mandatory") // mandatory, configurable
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  exceptions      PolicyException[]
+  auditLogs       AuditLog[]
+}
+
+model PolicyException {
+  id              String   @id @default(cuid())
+  policyId        String
+  userId          String
+  reason          String
+  grantedById    String?
+  expiresAt       DateTime?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  policy          OperationPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@index([policyId])
+  @@index([userId])
+}
+
+// ============ سلة الحذف (Recycle Bin) ============
+
+model DeletionBatch {
+  id              String   @id @default(cuid())
+  batchName       String?
+  reason          String?
+  status          String   @default("soft_deleted") // soft_deleted, restored, destroyed
+  executedBy      String?
+  expiresAt       DateTime
+  destroyedAt     DateTime?
+  itemCount       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items           DeletionBatchItem[]
+  auditLogs       AuditLog[]
+}
+
+model DeletionBatchItem {
+  id              String   @id @default(cuid())
+  batchId         String
+  itemType        String   // legislation, import, source
+  itemId          String
+  itemName        String
+  snapshot        String?
+  createdAt       DateTime @default(now())
+
+  batch           DeletionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId])
+  @@index([itemType, itemId])
+}
+
+// ============ الباحث (Researcher Tools) ============
+
+model Favorite {
+  id              String   @id @default(cuid())
+  userId          String
+  legislationId  String?
+  articleId       String?
+  label           String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legislation     Legislation? @relation(fields: [legislationId], references: [id])
+  article         Article? @relation(fields: [articleId], references: [id])
+
+  @@index([userId])
+}
+
+model SavedSearch {
+  id              String   @id @default(cuid())
+  userId          String
+  legislationId  String?
+  name            String
+  query           String
+  filters         String?
+  createdAt       DateTime @default(now())
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legislation     Legislation? @relation(fields: [legislationId], references: [id])
+
+  @@index([userId])
+  @@index([legislationId])
+}
+
+model Note {
+  id              String   @id @default(cuid())
+  userId          String
+  legislationId  String?
+  articleId       String?
+  articleVersionId String?
+  content         String
+  contextDate     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legislation     Legislation? @relation(fields: [legislationId], references: [id])
+  article         Article? @relation(fields: [articleId], references: [id])
+
+  @@index([userId])
+  @@index([legislationId])
+}
+
+model Participation {
+  id              String   @id @default(cuid())
+  userId          String
+  legislationId  String?
+  participationType String // comment, suggestion, complaint
+  content         String
+  trackingNumber  String   @unique
+  status          String   @default("received") // received, triage, resolved, rejected
+  responseNotes   String?
+  isPublic        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legislation     Legislation? @relation(fields: [legislationId], references: [id])
+
+  @@index([userId])
+  @@index([legislationId])
+  @@index([status])
+}
+
+// ============ الجودة والتدقيق (Quality & Audit) ============
+
+model Report {
+  id              String   @id @default(cuid())
+  legislationId  String?
+  reportType      String   // missing_source, incomplete_dates, conflicting_periods, broken_reference, unlinked_amendment, unreviewed_ocr, missing_publish_data
+  severity        String   @default("warning") // info, warning, error, critical
+  title           String
+  description     String?
+  status          String   @default("open") // open, processing, ignored, resolved
+  resolutionNotes String?
+  reportedBy      String?
+  resolvedBy      String?
+  resolvedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  legislation     Legislation? @relation(fields: [legislationId], references: [id])
+  processingLogs  ProcessingLog[]
+  auditLogs       AuditLog[]
+
+  @@index([legislationId])
+  @@index([status])
+}
+
+model ProcessingLog {
+  id              String   @id @default(cuid())
+  reportId       String?
+  action          String
+  actor           String?
+  fromState       String?
+  toState         String?
+  reason          String?
+  metadata        String?
+  createdAt       DateTime @default(now())
+
+  report          Report? @relation(fields: [reportId], references: [id])
+
+  @@index([reportId])
+}
+
+model AuditLog {
+  id              String   @id @default(cuid())
+  userId          String?
+  action          String
+  resource        String
+  resourceId      String?
+  operation       String?
+  beforeState     String?
+  afterState      String?
+  reason          String?
+  ipAddress       String?
+  createdAt       DateTime @default(now())
+
+  user            User? @relation(fields: [userId], references: [id])
+  legislation     Legislation? @relation(fields: [legislationId], references: [id])
+  amendmentDocument AmendmentDocument? @relation(fields: [amendmentDocumentId], references: [id])
+  amendmentOperation AmendmentOperation? @relation(fields: [amendmentOperationId], references: [id])
+  attachment      Attachment? @relation(fields: [attachmentId], references: [id])
+  relation        Relation? @relation(fields: [relationId], references: [id])
+  importOp        ImportOperation? @relation(fields: [importOperationId], references: [id])
+  report          Report? @relation(fields: [reportId], references: [id])
+  policy          OperationPolicy? @relation(fields: [policyId], references: [id])
+  role            Role? @relation(fields: [roleId], references: [id])
+  deletionBatch   DeletionBatch? @relation(fields: [deletionBatchId], references: [id])
+
+  legislationId   String?
+  amendmentDocumentId String?
+  amendmentOperationId String?
+  attachmentId    String?
+  relationId      String?
+  importOperationId String?
+  reportId        String?
+  policyId        String?
+  roleId          String?
+  deletionBatchId String?
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@index([createdAt])
+}
+
+model WorkflowTransition {
+  id              String   @id @default(cuid())
+  legislationId  String
+  fromStatus      String
+  toStatus        String
+  reason          String?
+  actor           String?
+  createdAt       DateTime @default(now())
+
+  legislation     Legislation @relation(fields: [legislationId], references: [id], onDelete: Cascade)
+
+  @@index([legislationId])
+}
+
+// ============ محتوى المنصة العامة (Public Content) ============
+
+model PlatformSetting {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String
+  type            String   @default("string") // string, number, boolean, json
+  category        String   @default("general")
+  updatedAt      DateTime @updatedAt
+}
+
+model NavItem {
+  id              String   @id @default(cuid())
+  label           String
+  target          String
+  position        String   @default("header") // header, footer
+  sortOrder       Int      @default(0)
+  isVisible       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PublicPage {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  intro           String?
+  content         String?
+  status          String   @default("draft")
+  editRev         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sections        PublicPageSection[]
+
+  @@index([status])
+}
+
+model PublicPageSection {
+  id              String   @id @default(cuid())
+  pageId          String
+  title           String
+  body            String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  page            PublicPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId])
+}
+
+model NewsArticle {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  title           String
+  summary         String?
+  body            String
+  publishedAt     DateTime?
+  status          String   @default("draft")
+  editRev         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([publishedAt])
+}
+
+// ============ القاموس والبحث (Dictionary & Search) ============
+
+model SearchDictionary {
+  id              String   @id @default(cuid())
+  version         Int      @default(1)
+  status          String   @default("draft") // draft, published, archived
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  entries         SearchDictionaryEntry[]
+}
+
+model SearchDictionaryEntry {
+  id              String   @id @default(cuid())
+  dictionaryId    String
+  canonical       String
+  synonym         String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  dictionary     SearchDictionary @relation(fields: [dictionaryId], references: [id], onDelete: Cascade)
+
+  @@index([dictionaryId])
+  @@index([canonical])
+}
+
+model SearchIndex {
+  id              String   @id @default(cuid())
+  entityType      String   // legislation, article, attachment
+  entityId        String
+  text            String
+  metadata        String?
+  updatedAt       DateTime @updatedAt
+
+  @@index([entityType, entityId])
+}

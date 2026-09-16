@@ -1,0 +1,1057 @@
+'use client'
+
+import { useEffect, useState, useRef } from 'react'
+import { useAppStore } from '@/store/app-store'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Input } from '@/components/ui/input'
+import {
+  ArrowRight,
+  BookOpen,
+  FileText,
+  History,
+  Network,
+  LayoutGrid,
+  Printer,
+  Share2,
+  Star,
+  Flag,
+  Search,
+  ChevronLeft,
+  ChevronDown,
+  ChevronUp,
+  Scale,
+  Building2,
+  Calendar,
+  CheckCircle2,
+  AlertCircle,
+  ExternalLink,
+  Hash,
+} from 'lucide-react'
+import {
+  LEGAL_STATUS_LABELS,
+  VERIFICATION_LABELS,
+  AMENDMENT_OPERATION_LABELS,
+  ATTACHMENT_TYPE_LABELS,
+  RELATION_TYPE_LABELS,
+  formatDate,
+  CHANGE_TYPE_LABELS,
+  highlight,
+} from '@/lib/constants'
+
+interface LegislationDetail {
+  id: string
+  slug: string
+  officialTitle: string
+  shortTitle: string | null
+  number: string | null
+  year: number | null
+  type: any
+  authority: any
+  subjects: any[]
+  classifications: any[]
+  issueDate: string | null
+  publicationDate: string | null
+  effectiveDate: string | null
+  legalStatus: string
+  workflowStatus: string
+  verificationLevel: string
+  preamble: string | null
+  hasAmendments: boolean
+  structureNodes: any[]
+  articles: any[]
+  attachments: any[]
+  sources: any[]
+  officialJournals: any[]
+  articleCount: number
+  attachmentCount: number
+  amendmentCount: number
+  relationCount: number
+}
+
+interface AmendmentDoc {
+  items: any[]
+}
+
+interface RelationData {
+  from: any
+  outgoing: any[]
+  incoming: any[]
+}
+
+export function LegislationDetailView() {
+  const slug = useAppStore((s) => s.slug)
+  const navigate = useAppStore((s) => s.navigate)
+  const [data, setData] = useState<LegislationDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+  const [articleSearch, setArticleSearch] = useState('')
+
+  useEffect(() => {
+    if (!slug) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
+    fetch(`/api/legislations/${slug}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setData(d)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [slug])
+
+  if (loading) {
+    return (
+      <div className="container mx-auto max-w-7xl px-4 py-8 space-y-4">
+        <Skeleton className="h-12 w-2/3" />
+        <Skeleton className="h-6 w-1/2" />
+        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-96 rounded-xl" />
+      </div>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="container mx-auto max-w-7xl px-4 py-16 text-center">
+        <p className="text-muted-foreground">التشريع غير موجود</p>
+        <Button onClick={() => navigate('legislations')} className="mt-4">
+          العودة للقائمة
+        </Button>
+      </div>
+    )
+  }
+
+  const status = LEGAL_STATUS_LABELS[data.legalStatus] || LEGAL_STATUS_LABELS.active
+  const verification = VERIFICATION_LABELS[data.verificationLevel] || VERIFICATION_LABELS.unverified
+
+  return (
+    <div className="container mx-auto max-w-7xl px-4 py-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <button onClick={() => navigate('home')} className="hover:text-primary">
+          الرئيسية
+        </button>
+        <ChevronLeft className="h-3 w-3" />
+        <button onClick={() => navigate('legislations')} className="hover:text-primary">
+          التشريعات
+        </button>
+        <ChevronLeft className="h-3 w-3" />
+        <span className="text-foreground truncate">{data.shortTitle}</span>
+      </div>
+
+      {/* Header card */}
+      <Card className="mb-6 border-t-4 border-t-primary overflow-hidden">
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <Badge className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/15">
+                  {data.type?.nameAr}
+                </Badge>
+                <Badge variant="outline" className={status.color}>{status.label}</Badge>
+                <Badge variant="outline" className={verification.color}>{verification.label}</Badge>
+                {data.hasAmendments && (
+                  <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
+                    <History className="h-3 w-3 ml-1" />
+                    معدَّل
+                  </Badge>
+                )}
+              </div>
+              <h1 className="text-2xl md:text-3xl font-bold text-secondary mb-3 leading-tight">
+                {data.officialTitle}
+              </h1>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <InfoBox icon={Hash} label="الرقم / السنة" value={data.number && data.year ? `${data.number} / ${data.year.toLocaleString('ar-EG')}` : '—'} />
+                <InfoBox icon={Building2} label="جهة الإصدار" value={data.authority?.nameAr || '—'} />
+                <InfoBox icon={Calendar} label="تاريخ الإصدار" value={formatDate(data.issueDate)} />
+                <InfoBox icon={CheckCircle2} label="تاريخ النفاذ" value={formatDate(data.effectiveDate)} />
+              </div>
+            </div>
+            {/* Action tools */}
+            <div className="flex flex-col gap-2 min-w-[140px]">
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
+                <Printer className="h-4 w-4 ml-1.5" />
+                طباعة
+              </Button>
+              <Button variant="outline" size="sm" className="no-print">
+                <Share2 className="h-4 w-4 ml-1.5" />
+                نسخ الرابط
+              </Button>
+              <Button variant="outline" size="sm" className="no-print">
+                <Star className="h-4 w-4 ml-1.5" />
+                أضف للمفضلة
+              </Button>
+              <Button variant="outline" size="sm" className="no-print">
+                <Flag className="h-4 w-4 ml-1.5" />
+                إبلاغ
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <QuickStat icon={FileText} label="عدد المواد" value={data.articleCount} />
+        <QuickStat icon={LayoutGrid} label="الملاحق" value={data.attachmentCount} />
+        <QuickStat icon={History} label="التعديلات" value={data.amendmentCount} />
+        <QuickStat icon={Network} label="العلاقات" value={data.relationCount} />
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <div className="overflow-x-auto">
+          <TabsList className="w-full justify-start mb-4 h-auto flex-wrap">
+            <TabsTrigger value="overview" className="gap-1.5">
+              <BookOpen className="h-4 w-4" />
+              <span>النظرة العامة</span>
+            </TabsTrigger>
+            <TabsTrigger value="articles" className="gap-1.5">
+              <FileText className="h-4 w-4" />
+              <span>المواد</span>
+            </TabsTrigger>
+            <TabsTrigger value="structure" className="gap-1.5">
+              <LayoutGrid className="h-4 w-4" />
+              <span>الفهرس</span>
+            </TabsTrigger>
+            <TabsTrigger value="amendments" className="gap-1.5">
+              <History className="h-4 w-4" />
+              <span>التعديلات</span>
+            </TabsTrigger>
+            <TabsTrigger value="attachments" className="gap-1.5">
+              <FileText className="h-4 w-4" />
+              <span>الملاحق</span>
+            </TabsTrigger>
+            <TabsTrigger value="relations" className="gap-1.5">
+              <Network className="h-4 w-4" />
+              <span>العلاقات</span>
+            </TabsTrigger>
+            <TabsTrigger value="sources" className="gap-1.5">
+              <FileText className="h-4 w-4" />
+              <span>المصادر</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="overview" className="mt-0">
+          <OverviewTab data={data} />
+        </TabsContent>
+        <TabsContent value="articles" className="mt-0">
+          <ArticlesTab data={data} articleSearch={articleSearch} setArticleSearch={setArticleSearch} />
+        </TabsContent>
+        <TabsContent value="structure" className="mt-0">
+          <StructureTab data={data} />
+        </TabsContent>
+        <TabsContent value="amendments" className="mt-0">
+          <AmendmentsTab slug={data.slug} />
+        </TabsContent>
+        <TabsContent value="attachments" className="mt-0">
+          <AttachmentsTab slug={data.slug} attachments={data.attachments} />
+        </TabsContent>
+        <TabsContent value="relations" className="mt-0">
+          <RelationsTab slug={data.slug} />
+        </TabsContent>
+        <TabsContent value="sources" className="mt-0">
+          <SourcesTab data={data} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+function InfoBox({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
+        <Icon className="h-3 w-3" />
+        {label}
+      </div>
+      <div className="font-semibold text-sm">{value}</div>
+    </div>
+  )
+}
+
+function QuickStat({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
+  return (
+    <Card className="border-border/60">
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Icon className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <div className="text-xl font-bold text-secondary article-number">
+            {value.toLocaleString('ar-EG')}
+          </div>
+          <div className="text-xs text-muted-foreground">{label}</div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function OverviewTab({ data }: { data: LegislationDetail }) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2 space-y-6">
+        {/* Preamble */}
+        {data.preamble && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                الديباجة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="legal-text leading-loose text-base">{data.preamble}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* First articles preview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              أبرز المواد
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {data.articles.slice(0, 5).map((a) => {
+              const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
+              return (
+                <div key={a.id} className="border-r-4 border-r-primary/40 pr-4 py-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-primary text-primary-foreground article-number">
+                      مادة ({a.publishedNumber})
+                    </Badge>
+                    {v?.changeType && v.changeType !== 'initial' && (
+                      <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
+                        {CHANGE_TYPE_LABELS[v.changeType] || v.changeType}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="legal-text text-sm">{v?.textContent || '—'}</p>
+                </div>
+              )
+            })}
+            {data.articles.length > 5 && (
+              <p className="text-xs text-muted-foreground text-center pt-2">
+                ...و {data.articles.length - 5} مادة أخرى
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Sidebar */}
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">المعلومات الأساسية</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <Row label="الرقم" value={data.number || '—'} />
+            <Row label="السنة" value={data.year?.toString() || '—'} />
+            <Row label="النوع" value={data.type?.nameAr || '—'} />
+            <Row label="جهة الإصدار" value={data.authority?.nameAr || '—'} />
+            <Row label="تاريخ الإصدار" value={formatDate(data.issueDate)} />
+            <Row label="تاريخ النشر" value={formatDate(data.publicationDate)} />
+            <Row label="تاريخ النفاذ" value={formatDate(data.effectiveDate)} />
+          </CardContent>
+        </Card>
+
+        {data.subjects.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">الموضوعات</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              {data.subjects.map((s) => (
+                <Badge key={s.id} variant="secondary" className="bg-muted">
+                  {s.nameAr}
+                </Badge>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        {data.classifications.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">التصنيفات</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              {data.classifications.map((c) => (
+                <Badge key={c.id} variant="outline">
+                  {c.nameAr}
+                </Badge>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card className="bg-gradient-to-br from-primary/5 to-secondary/5 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="h-5 w-5 text-primary" />
+              <h4 className="font-semibold text-sm">ملاحظة</h4>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              النص المعروض هو آخر نسخة نافذة. للاطلاع على النصوص السابقة والتعديلات،
+              استخدم تبويب «التعديلات».
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: LegislationDetail; articleSearch: string; setArticleSearch: (s: string) => void }) {
+  const filtered = articleSearch.trim()
+    ? data.articles.filter((a) => {
+        const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
+        const text = `${a.publishedNumber} ${v?.textContent || ''}`
+        return text.includes(articleSearch)
+      })
+    : data.articles
+
+  return (
+    <div className="space-y-4">
+      <div className="relative max-w-xl">
+        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="search"
+          value={articleSearch}
+          onChange={(e) => setArticleSearch(e.target.value)}
+          placeholder="ابحث داخل المواد..."
+          className="pr-10"
+        />
+      </div>
+      <div className="text-sm text-muted-foreground">
+        {filtered.length.toLocaleString('ar-EG')} من {data.articles.length.toLocaleString('ar-EG')} مادة
+      </div>
+      <div className="space-y-3">
+        {filtered.map((a, idx) => {
+          const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
+          const parts = articleSearch ? highlight(v?.textContent || '', articleSearch) : null
+          return (
+            <Card key={a.id} id={`article-${a.id}`} className="border-border/60 hover:border-primary/30 transition-colors">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-4">
+                  <div className="shrink-0">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center article-number font-bold text-primary text-lg">
+                      {a.publishedNumber || (idx + 1)}
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <Badge variant="outline" className="bg-muted/50">
+                        مادة ({a.publishedNumber})
+                      </Badge>
+                      {v?.changeType && v.changeType !== 'initial' && (
+                        <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
+                          {CHANGE_TYPE_LABELS[v.changeType] || v.changeType}
+                        </Badge>
+                      )}
+                      {v?.effectiveFrom && (
+                        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          نافذ منذ {formatDate(v.effectiveFrom)}
+                        </span>
+                      )}
+                    </div>
+                    {parts ? (
+                      <p className="legal-text text-sm leading-loose">
+                        {parts.map((p, i) => (
+                          <span key={i} className={p.match ? 'bg-yellow-200/60 rounded px-0.5' : ''}>
+                            {p.text}
+                          </span>
+                        ))}
+                      </p>
+                    ) : (
+                      <p className="legal-text text-sm leading-loose">{v?.textContent || '—'}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="إضافة للمفضلة">
+                      <Star className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="نسخ الرابط">
+                      <Hash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+        {filtered.length === 0 && (
+          <Card>
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+              لا توجد مواد مطابقة لبحثك
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StructureTab({ data }: { data: LegislationDetail }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <LayoutGrid className="h-5 w-5 text-primary" />
+          فهرس التشريع
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {data.structureNodes.length === 0 && data.articles.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            لا توجد بنية هيكلية مسجلة لهذا التشريع.
+          </p>
+        ) : (
+          <div className="space-y-1">
+            {data.structureNodes.length > 0 ? (
+              data.structureNodes.map((n) => (
+                <StructureNodeView key={n.id} node={n} articles={data.articles} depth={0} />
+              ))
+            ) : (
+              <div className="space-y-1">
+                {data.articles.map((a) => {
+                  const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
+                  return (
+                    <div key={a.id} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/40">
+                      <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+                      <Badge variant="outline" className="article-number">مادة {a.publishedNumber}</Badge>
+                      <span className="text-sm truncate">{v?.textContent?.substring(0, 80)}...</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function StructureNodeView({ node, articles, depth }: { node: any; articles: any[]; depth: number }) {
+  const [open, setOpen] = useState(depth < 2)
+  const hasChildren = node.children && node.children.length > 0
+  const hasArticles = node.articles && node.articles.length > 0
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 w-full text-right p-2 rounded-md hover:bg-muted/40 transition-colors"
+        style={{ paddingRight: `${depth * 1.5 + 0.5}rem` }}
+      >
+        {hasChildren || hasArticles ? (
+          open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronUp className="h-4 w-4 shrink-0" />
+        ) : (
+          <div className="w-4" />
+        )}
+        <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          {node.nodeType === 'book' ? 'كتاب' :
+           node.nodeType === 'part' ? 'جزء' :
+           node.nodeType === 'chapter' ? 'باب' :
+           node.nodeType === 'section' ? 'فصل' :
+           node.nodeType === 'subsection' ? 'قسم' :
+           node.nodeType === 'title' ? 'عنوان' : node.nodeType}
+          {node.number && <span className="article-number"> {node.number}</span>}
+        </Badge>
+        {node.title && <span className="text-sm font-medium">{node.title}</span>}
+      </button>
+      {open && hasChildren && (
+        <div>
+          {node.children.map((c: any) => (
+            <StructureNodeView key={c.id} node={c} articles={articles} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+      {open && hasArticles && (
+        <div style={{ paddingRight: `${(depth + 1) * 1.5 + 0.5}rem` }}>
+          {node.articles.map((a: any) => {
+            const v = articles.find((x) => x.id === a.id)?.versions?.[0]
+            return (
+              <div key={a.id} className="flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/30">
+                <ChevronLeft className="h-3 w-3 text-muted-foreground" />
+                <Badge variant="outline" className="article-number text-[11px]">مادة {a.publishedNumber}</Badge>
+                <span className="text-xs text-muted-foreground truncate">{v?.textContent?.substring(0, 80)}...</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AmendmentsTab({ slug }: { slug: string }) {
+  const [data, setData] = useState<AmendmentDoc | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/legislations/${slug}/amendments`)
+      .then((r) => r.json())
+      .then((d) => {
+        setData(d)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [slug])
+
+  if (loading) {
+    return <Skeleton className="h-64 rounded-xl" />
+  }
+
+  if (!data || data.items.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <History className="h-10 w-10 mx-auto mb-2 opacity-50" />
+          لا توجد تعديلات مسجلة على هذا التشريع
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            يعرض هذا القسم الخط الزمني للتعديلات التي أثرت على هذا التشريع، مع تفاصيل
+            العمليات والنصوص السابقة واللاحقة لكل مادة معدَّلة.
+          </p>
+        </CardContent>
+      </Card>
+      <div className="space-y-3">
+        {data.items.map((doc) => (
+          <Card key={doc.id} className="overflow-hidden">
+            <button
+              onClick={() => setExpanded(expanded === doc.id ? null : doc.id)}
+              className="w-full text-right p-4 hover:bg-muted/40 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className="bg-primary text-primary-foreground">
+                      {doc.year?.toLocaleString('ar-EG')}
+                    </Badge>
+                    <Badge variant="outline" className={doc.status === 'applied' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}>
+                      {doc.status === 'applied' ? 'مُطبَّق' : doc.status === 'draft' ? 'مسودة' : doc.status === 'in_review' ? 'قيد المراجعة' : doc.status}
+                    </Badge>
+                    <Badge variant="outline">
+                      {doc.operationCount?.toLocaleString('ar-EG')} عملية
+                    </Badge>
+                  </div>
+                  <h3 className="font-semibold text-base mb-1">{doc.title}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{doc.description}</p>
+                  <div className="flex items-center gap-3 text-[11px] text-muted-foreground mt-2">
+                    <span>الرقم: {doc.number}</span>
+                    <span>•</span>
+                    <span>سنة النفاذ: {formatDate(doc.effectiveDate)}</span>
+                  </div>
+                </div>
+                {expanded === doc.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </div>
+            </button>
+            {expanded === doc.id && (
+              <CardContent className="border-t bg-muted/20 p-4 space-y-3">
+                {doc.operations?.map((op: any) => (
+                  <div key={op.id} className="border-r-4 border-r-primary/40 pr-3 py-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-secondary text-secondary-foreground">
+                        {AMENDMENT_OPERATION_LABELS[op.operationType] || op.operationType}
+                      </Badge>
+                      {op.targetArticle && (
+                        <Badge variant="outline" className="article-number">
+                          مادة {op.targetArticle.publishedNumber}
+                        </Badge>
+                      )}
+                      {op.newArticleNumber && (
+                        <Badge variant="outline" className="article-number text-emerald-700 bg-emerald-50 border-emerald-200">
+                          مادة جديدة {op.newArticleNumber}
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="legal-text text-sm">{op.newText}</p>
+                  </div>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AttachmentsTab({ slug, attachments }: { slug: string; attachments: any[] }) {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/legislations/${slug}/attachments`)
+      .then((r) => r.json())
+      .then((d) => {
+        setData(d)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [slug])
+
+  if (loading) return <Skeleton className="h-64 rounded-xl" />
+
+  const items = data?.items || attachments || []
+
+  if (items.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <LayoutGrid className="h-10 w-10 mx-auto mb-2 opacity-50" />
+          لا توجد ملاحق منشورة لهذا التشريع
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            تشمل الملاحق: اللوائح التنفيذية، الجداول، النماذج، الخرائط، التعاريف،
+            القوائم، والتصحيحات، مع عرض محتواها ومصادرها.
+          </p>
+        </CardContent>
+      </Card>
+      {items.map((att: any) => (
+        <Card key={att.id} className="overflow-hidden">
+          <button
+            onClick={() => setExpanded(expanded === att.id ? null : att.id)}
+            className="w-full text-right p-4 hover:bg-muted/40 transition-colors"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <Badge className="bg-primary text-primary-foreground">
+                    {ATTACHMENT_TYPE_LABELS[att.attachmentType] || att.attachmentType}
+                  </Badge>
+                  <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+                    منشور
+                  </Badge>
+                  {att.contentType === 'table' && (
+                    <Badge variant="outline" className="bg-muted/50">
+                      <LayoutGrid className="h-3 w-3 ml-1" />
+                      جدول
+                    </Badge>
+                  )}
+                  {att.contentType === 'file' && (
+                    <Badge variant="outline" className="bg-muted/50">
+                      <FileText className="h-3 w-3 ml-1" />
+                      ملف
+                    </Badge>
+                  )}
+                </div>
+                <h3 className="font-semibold text-base">{att.title}</h3>
+              </div>
+              {expanded === att.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            </div>
+          </button>
+          {expanded === att.id && (
+            <CardContent className="border-t bg-muted/20 p-4">
+              {att.textContent && (
+                <p className="legal-text text-sm mb-4">{att.textContent}</p>
+              )}
+              {att.tableContent && att.contentType === 'table' && (
+                <TableView tableContent={att.tableContent} />
+              )}
+              {att.contentType === 'file' && (
+                <div className="flex items-center justify-center py-12 border-2 border-dashed rounded-lg">
+                  <div className="text-center">
+                    <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground mb-3">ملف مرفق</p>
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="h-4 w-4 ml-1.5" />
+                      تنزيل الملف
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      ))}
+    </div>
+  )
+}
+
+function TableView({ tableContent }: { tableContent: string }) {
+  let table: { columns: string[]; rows: string[][] } = { columns: [], rows: [] }
+  try {
+    table = JSON.parse(tableContent)
+  } catch {
+    return <p className="text-sm text-destructive">خطأ في صيغة الجدول</p>
+  }
+  if (!table.columns || !table.rows) return null
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full text-sm">
+        <thead className="bg-secondary/10">
+          <tr>
+            {table.columns.map((c, i) => (
+              <th key={i} className="text-right p-2 font-semibold border-b border-border">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((row, i) => (
+            <tr key={i} className="hover:bg-muted/30 border-b border-border/40">
+              {row.map((cell, j) => (
+                <td key={j} className="p-2 border-l border-border/40 last:border-l-0 article-number">
+                  {cell}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function RelationsTab({ slug }: { slug: string }) {
+  const [data, setData] = useState<RelationData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/legislations/${slug}/relations`)
+      .then((r) => r.json())
+      .then((d) => {
+        setData(d)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [slug])
+
+  if (loading) return <Skeleton className="h-64 rounded-xl" />
+
+  if (!data || (data.outgoing.length === 0 && data.incoming.length === 0)) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-muted-foreground">
+          <Network className="h-10 w-10 mx-auto mb-2 opacity-50" />
+          لا توجد علاقات قانونية مسجلة
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            العلاقات القانونية الموجهة: يُعدِّل، يُلغي، يُنفِّذ، يُستند إلى، يُحيل إلى،
+            يُصحح، مرتبط موضوعيًا — مع عرض الاتجاه العكسي بصياغة مناسبة.
+          </p>
+        </CardContent>
+      </Card>
+
+      {data.outgoing.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <ArrowRight className="h-5 w-5 text-primary" />
+            العلاقات الصادرة
+          </h3>
+          <div className="space-y-2">
+            {data.outgoing.map((r) => {
+              const rel = RELATION_TYPE_LABELS[r.relationType] || { fromLabel: r.relationType, toLabel: r.relationType }
+              return (
+                <Card key={r.id} className="border-border/60">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <Badge className="bg-secondary text-secondary-foreground">
+                      {rel.fromLabel}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <button
+                        onClick={() => useAppStore.getState().openLegislation(r.toLegislation.slug)}
+                        className="text-sm font-medium hover:text-primary truncate"
+                      >
+                        {r.toLegislation.officialTitle}
+                      </button>
+                      <div className="text-[11px] text-muted-foreground">
+                        {r.toLegislation.type?.nameAr} • {r.toLegislation.year?.toLocaleString('ar-EG')}
+                      </div>
+                    </div>
+                    {r.evidence && (
+                      <Badge variant="outline" className="text-[11px]">
+                        {r.evidence}
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {data.incoming.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <ArrowRight className="h-5 w-5 text-primary rotate-180" />
+            العلاقات الواردة
+          </h3>
+          <div className="space-y-2">
+            {data.incoming.map((r) => {
+              const rel = RELATION_TYPE_LABELS[r.relationType] || { fromLabel: r.relationType, toLabel: r.relationType }
+              return (
+                <Card key={r.id} className="border-border/60">
+                  <CardContent className="p-3 flex items-center gap-3">
+                    <Badge variant="outline" className="bg-muted">
+                      {rel.toLabel}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <button
+                        onClick={() => useAppStore.getState().openLegislation(r.fromLegislation.slug)}
+                        className="text-sm font-medium hover:text-primary truncate"
+                      >
+                        {r.fromLegislation.officialTitle}
+                      </button>
+                      <div className="text-[11px] text-muted-foreground">
+                        {r.fromLegislation.type?.nameAr} • {r.fromLegislation.year?.toLocaleString('ar-EG')}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SourcesTab({ data }: { data: LegislationDetail }) {
+  return (
+    <div className="space-y-4">
+      <Card className="border-primary/20 bg-primary/5">
+        <CardContent className="p-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            المصادر الأصلية للنص القانوني: الجريدة الرسمية، النسخ الإلكترونية،
+            الوثائق الإثباتية. كل مصدر له مستوى تحقق مستقل.
+          </p>
+        </CardContent>
+      </Card>
+
+      {data.sources.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+            لا توجد مصادر مسجلة
+          </CardContent>
+        </Card>
+      ) : (
+        data.sources.map((s: any) => (
+          <Card key={s.id}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <h3 className="font-semibold text-sm">{s.source?.name || s.source?.originalName}</h3>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div>النوع: {s.source?.mimeType}</div>
+                    <div>الحجم: {s.source?.size?.toLocaleString('ar-EG')} بايت</div>
+                    <div>تاريخ الاستلام: {formatDate(s.source?.receivedAt)}</div>
+                    <div>مستوى التحقق: {
+                      VERIFICATION_LABELS[s.source?.verificationLevel]?.label || s.source?.verificationLevel
+                    }</div>
+                  </div>
+                </div>
+                <Badge variant="outline" className={
+                  s.role === 'extraction' ? 'text-blue-700 bg-blue-50 border-blue-200' :
+                  s.role === 'evidence' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                  s.role === 'display' ? 'text-purple-700 bg-purple-50 border-purple-200' :
+                  'text-amber-700 bg-amber-50 border-amber-200'
+                }>
+                  {s.role === 'extraction' ? 'استخراج' :
+                   s.role === 'evidence' ? 'إثبات' :
+                   s.role === 'display' ? 'عرض' :
+                   s.role === 'download' ? 'تنزيل' : s.role}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        ))
+      )}
+
+      {data.officialJournals.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-primary" />
+              الجريدة الرسمية
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {data.officialJournals.map((j) => (
+              <div key={j.id} className="flex flex-wrap items-center gap-3 text-sm border-b border-border/40 pb-2 last:border-b-0">
+                <Badge variant="outline">
+                  <BookOpen className="h-3 w-3 ml-1" />
+                  العدد {j.journalNumber || '—'}
+                </Badge>
+                {j.issueNumber && (
+                  <span className="text-xs text-muted-foreground">
+                    إصدار {j.issueNumber}
+                  </span>
+                )}
+                {j.pageFrom && (
+                  <span className="text-xs text-muted-foreground">
+                    صفحات {j.pageFrom}{j.pageTo ? `-${j.pageTo}` : ''}
+                  </span>
+                )}
+                {j.publicationDate && (
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(j.publicationDate)}
+                  </span>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/30 py-1.5 last:border-b-0">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="font-medium text-sm article-number">{value}</span>
+    </div>
+  )
+}
