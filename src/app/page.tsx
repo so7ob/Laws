@@ -3,11 +3,14 @@
 import { useAppStore } from '@/store/app-store'
 import { Header } from '@/components/common/header'
 import { Footer } from '@/components/common/footer'
+import { ReadingProgress } from '@/components/common/reading-progress'
 import { HomeView } from '@/components/public/home-view'
 import { LegislationsView } from '@/components/public/legislations-view'
 import { LegislationDetailView } from '@/components/public/legislation-detail-view'
 import { SearchView } from '@/components/public/search-view'
 import { NewsView, NewsDetailView, PublicPageView } from '@/components/public/content-views'
+import { AccountView } from '@/components/public/account-view'
+import { CompareView } from '@/components/public/compare-view'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { useEffect } from 'react'
 
@@ -41,7 +44,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      {view !== 'admin' && <Header />}
+      {view !== 'admin' && view !== 'home' && <ReadingProgress />}
       <main id="main-content" className="flex-1 w-full">
         <ViewRouter view={view} />
       </main>
@@ -81,6 +85,10 @@ function ViewRouter({ view }: { view: string }) {
       return <NewsDetailView />
     case 'page':
       return <PublicPageView />
+    case 'account':
+      return <AccountView />
+    case 'compare':
+      return <CompareView />
     case 'admin':
       return <AdminShell />
     default:

@@ -1,24 +1,22 @@
 'use client'
 
-import Link from 'next/link'
 import { useAppStore } from '@/store/app-store'
 import { Button } from '@/components/ui/button'
 import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
 import { Input } from '@/components/ui/input'
+import { ThemeToggle } from '@/components/theme-toggle'
 import {
   Search,
   Scale,
   Menu,
   X,
-  ChevronDown,
   BookOpen,
   FileText,
   Network,
@@ -26,8 +24,10 @@ import {
   Star,
   Archive,
   Newspaper,
-  Settings,
   Shield,
+  User,
+  GitCompare,
+  Bookmark,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -44,6 +44,7 @@ const NAV_GROUPS = [
       { label: 'الأكثر اطلاعًا', target: 'popular', icon: Star },
       { label: 'الأرشيف', target: 'archive', icon: Archive },
       { label: 'الدستور', target: 'constitution', icon: BookOpen },
+      { label: 'مقارنة التشريعات', target: 'compare', icon: GitCompare },
     ],
   },
   {
@@ -73,14 +74,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
       <div className="container mx-auto max-w-7xl px-4">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-16 items-center justify-between gap-3">
           {/* Logo */}
           <button
             onClick={() => navigate('home')}
-            className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity group"
+            aria-label="الصفحة الرئيسية"
           >
-            <div className="relative h-10 w-10 rounded-lg bg-gradient-to-br from-[#AC4459] to-[#344B61] flex items-center justify-center shadow-md">
-              <Scale className="h-6 w-6 text-white" />
+            <div className="relative h-10 w-10 rounded-lg bg-gradient-to-br from-[#AC4459] to-[#344B61] flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow overflow-hidden">
+              <Scale className="h-6 w-6 text-white relative z-10" />
+              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors" />
             </div>
             <div className="hidden sm:block text-right">
               <div className="font-bold text-base leading-tight text-secondary">
@@ -94,75 +97,115 @@ export function Header() {
 
           {/* Search */}
           <form onSubmit={onSearchSubmit} className="flex-1 max-w-xl mx-2">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="relative group">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث في النصوص القانونية..."
-                className="pr-10 pl-4 h-10 bg-background/80"
+                className="pr-10 pl-4 h-10 bg-background/80 focus-visible:ring-primary/40"
               />
             </div>
           </form>
 
-          {/* Desktop Nav */}
-          <div className="hidden lg:block">
-            <NavigationMenu dir="rtl">
-              <NavigationMenuList>
-                {NAV_GROUPS.map((group) => (
-                  <NavigationMenuItem key={group.label}>
-                    <NavigationMenuTrigger className="text-sm">
-                      {group.label}
-                    </NavigationMenuTrigger>
-                    <NavigationMenuContent>
-                      <ul className="grid w-[260px] gap-1 p-2">
-                        {group.items.map((item) => {
-                          const Icon = item.icon
-                          return (
-                            <li key={item.target}>
-                              <button
-                                onClick={() => navigate(item.target as any)}
-                                className="w-full flex items-center gap-3 rounded-md p-2 hover:bg-accent text-right transition-colors"
-                              >
-                                <Icon className="h-4 w-4 text-primary shrink-0" />
-                                <span className="text-sm">{item.label}</span>
-                              </button>
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    </NavigationMenuContent>
-                  </NavigationMenuItem>
-                ))}
-                <NavigationMenuItem>
-                  <button
-                    onClick={() => navigate('admin')}
-                    className={navigationMenuTriggerStyle()}
-                  >
-                    <Shield className="h-4 w-4 ml-1" />
-                    الإدارة
-                  </button>
-                </NavigationMenuItem>
-              </NavigationMenuList>
-            </NavigationMenu>
-          </div>
+          {/* Right Actions */}
+          <div className="flex items-center gap-1">
+            {/* Account */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 hidden sm:inline-flex"
+              onClick={() => navigate('account')}
+              title="حساب الباحث"
+              aria-label="حساب الباحث"
+            >
+              <User className="h-4 w-4" />
+            </Button>
 
-          {/* Mobile menu button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="القائمة"
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
+            {/* Theme toggle */}
+            <ThemeToggle />
+
+            {/* Desktop Nav */}
+            <div className="hidden lg:block">
+              <NavigationMenu dir="rtl">
+                <NavigationMenuList>
+                  {NAV_GROUPS.map((group) => (
+                    <NavigationMenuItem key={group.label}>
+                      <NavigationMenuTrigger className="text-sm">
+                        {group.label}
+                      </NavigationMenuTrigger>
+                      <NavigationMenuContent>
+                        <ul className="grid w-[260px] gap-1 p-2">
+                          {group.items.map((item) => {
+                            const Icon = item.icon
+                            return (
+                              <li key={item.target}>
+                                <button
+                                  onClick={() => navigate(item.target as any)}
+                                  className="w-full flex items-center gap-3 rounded-md p-2 hover:bg-accent text-right transition-colors group/item"
+                                >
+                                  <Icon className="h-4 w-4 text-primary shrink-0 group-hover/item:scale-110 transition-transform" />
+                                  <span className="text-sm">{item.label}</span>
+                                </button>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </NavigationMenuContent>
+                    </NavigationMenuItem>
+                  ))}
+                  <NavigationMenuItem>
+                    <button
+                      onClick={() => navigate('admin')}
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      <Shield className="h-4 w-4 ml-1" />
+                      الإدارة
+                    </button>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+            </div>
+
+            {/* Mobile menu button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="القائمة"
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Nav */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-border/40 py-3 space-y-1">
+          <div className="lg:hidden border-t border-border/40 py-3 space-y-1 max-h-[80vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                navigate('account')
+                setMobileOpen(false)
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent text-right transition-colors"
+            >
+              <User className="h-4 w-4 text-primary" />
+              <span className="text-sm">حساب الباحث</span>
+            </button>
+            <button
+              onClick={() => {
+                navigate('compare')
+                setMobileOpen(false)
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent text-right transition-colors"
+            >
+              <GitCompare className="h-4 w-4 text-primary" />
+              <span className="text-sm">مقارنة التشريعات</span>
+            </button>
+            <div className="border-t border-border/40 my-2" />
             {NAV_GROUPS.flatMap((g) => g.items).map((item) => {
               const Icon = item.icon
               return (
@@ -179,6 +222,7 @@ export function Header() {
                 </button>
               )
             })}
+            <div className="border-t border-border/40 my-2" />
             <button
               onClick={() => {
                 navigate('admin')

@@ -15,6 +15,8 @@ export type View =
   | 'news-detail'
   | 'page'
   | 'admin'
+  | 'account'
+  | 'compare'
 
 interface AppState {
   view: View

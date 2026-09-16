@@ -3,6 +3,7 @@ import { Cairo, Tajawal } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const cairo = Cairo({
   variable: "--font-cairo",
@@ -52,12 +53,19 @@ export default function RootLayout({
       <body
         className={`${cairo.variable} ${tajawal.variable} font-sans antialiased bg-background text-foreground`}
       >
-        <a href="#main-content" className="skip-link">
-          تخطَّ إلى المحتوى الرئيس
-        </a>
-        {children}
-        <Toaster />
-        <SonnerToaster position="top-center" richColors />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange={false}
+        >
+          <a href="#main-content" className="skip-link">
+            تخطَّ إلى المحتوى الرئيس
+          </a>
+          {children}
+          <Toaster />
+          <SonnerToaster position="top-center" richColors />
+        </ThemeProvider>
       </body>
     </html>
   );
