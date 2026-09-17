@@ -254,6 +254,10 @@ export function LegislationDetailView() {
                 </Badge>
                 <Badge variant="outline" className={status.color}>{status.label}</Badge>
                 <Badge variant="outline" className={verification.color}>{verification.label}</Badge>
+                <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
+                  <AlertCircle className="h-3 w-3 ml-1" />
+                  بيانات تجريبية
+                </Badge>
                 {data.hasAmendments && (
                   <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
                     <History className="h-3 w-3 ml-1" />
