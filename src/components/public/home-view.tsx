@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDate, relativeTime, formatYear } from '@/lib/constants'
 import { RecentlyViewed } from '@/components/public/recently-viewed'
+import { AnimatedDots } from '@/components/common/animated-dots'
 
 interface Stats {
   counts: {
@@ -144,6 +145,8 @@ export function HomeView() {
     <div>
       {/* Hero Section */}
       <section className="relative bg-hero-gradient text-white overflow-hidden">
+        {/* Animated floating dots background */}
+        <AnimatedDots count={35} />
         <div className="absolute inset-0 pattern-arabesque opacity-10" />
         {/* Decorative SVG - elegant geometric pattern */}
         <svg className="absolute top-0 right-0 w-32 h-32 opacity-20" viewBox="0 0 128 128" fill="none">
@@ -158,10 +161,6 @@ export function HomeView() {
           <path d="M0,0 L64,0 L64,64" stroke="white" strokeWidth="0.5" fill="none" opacity="0.4"/>
           <path d="M0,0 L32,0 L32,32" stroke="white" strokeWidth="0.5" fill="none" opacity="0.3"/>
         </svg>
-        {/* Subtle floating particles */}
-        <div className="absolute top-20 left-20 w-2 h-2 rounded-full bg-white/20 animate-float" />
-        <div className="absolute top-40 right-32 w-1.5 h-1.5 rounded-full bg-white/30 animate-float delay-300" />
-        <div className="absolute bottom-32 right-20 w-1 h-1 rounded-full bg-white/40 animate-float delay-500" />
 
         <div className="container relative mx-auto max-w-7xl px-4 py-16 md:py-24">
           <div className="max-w-3xl mx-auto text-center">
