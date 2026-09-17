@@ -197,7 +197,17 @@ export function LegislationsView({ preset }: { preset?: 'recent' | 'popular' | '
       {/* Active filter chips */}
       {Object.keys(applied).length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {Object.entries(applied).map(([k, v]) => (
+          {Object.entries(applied).map(([k, v]) => {
+            const filterLabels: Record<string, string> = {
+              type: 'النوع',
+              authority: 'الجهة',
+              subject: 'الموضوع',
+              legalStatus: 'الحالة',
+              verification: 'التحقق',
+              yearFrom: 'من سنة',
+              yearTo: 'إلى سنة',
+            }
+            return (
             <Badge key={k} variant="secondary" className="cursor-pointer hover:bg-destructive/20" onClick={() => {
               setApplied((p) => {
                 const next = { ...p }
@@ -206,10 +216,11 @@ export function LegislationsView({ preset }: { preset?: 'recent' | 'popular' | '
               })
               setPage(1)
             }}>
-              {k}: {v}
+              {filterLabels[k] || k}: {v}
               <X className="h-3 w-3 mr-1" />
             </Badge>
-          ))}
+            )
+          })}
         </div>
       )}
 
