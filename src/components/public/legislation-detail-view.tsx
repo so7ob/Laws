@@ -270,6 +270,20 @@ export function LegislationDetailView() {
                 <InfoBox icon={Calendar} label="تاريخ الإصدار" value={formatDate(data.issueDate)} />
                 <InfoBox icon={CheckCircle2} label="تاريخ النفاذ" value={formatDate(data.effectiveDate)} />
               </div>
+              {/* Historical view indicator — separate from legislation metadata (F06 fix) */}
+              {effectiveDate && (
+                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-blue-600 shrink-0" />
+                    <span className="font-semibold text-blue-700 dark:text-blue-300">
+                      عرض زمني: النص النافذ في {formatDate(effectiveDate)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 mr-6">
+                    هذه بيانات العرض التاريخي ولا تؤثر على بيانات التشريع القانونية.
+                  </p>
+                </div>
+              )}
               {/* Effective date picker */}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>

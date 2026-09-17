@@ -102,6 +102,11 @@ export async function GET(
       return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
 
+    // Count actual amendment documents targeting this legislation (F07 fix)
+    const amendmentDocCount = await db.amendmentDocument.count({
+      where: { targetLegislationId: leg.id },
+    })
+
     return NextResponse.json({
       ...leg,
       subjects: leg.legislationSubjects.map((ls) => ls.subject),
@@ -110,7 +115,7 @@ export async function GET(
       legislationClassifications: undefined,
       articleCount: leg._count.articles,
       attachmentCount: leg._count.attachments,
-      amendmentCount: leg._count.amendmentsFor,
+      amendmentCount: amendmentDocCount, // Use actual amendment document count
       relationCount: leg._count.relations + leg._count.reverseRelations,
       _count: undefined,
       // Indicate if we're viewing a historical version
