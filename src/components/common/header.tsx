@@ -29,6 +29,7 @@ import {
   GitCompare,
   Bookmark,
   BarChart3,
+  GitBranch,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -41,6 +42,7 @@ const NAV_GROUPS = [
     label: 'التشريعات',
     items: [
       { label: 'كل التشريعات', target: 'legislations', icon: Scale },
+      { label: 'الخط الزمني', target: 'timeline', icon: GitBranch },
       { label: 'أحدث التشريعات', target: 'recent', icon: History },
       { label: 'الأكثر اطلاعًا', target: 'popular', icon: Star },
       { label: 'الأرشيف', target: 'archive', icon: Archive },

@@ -18,6 +18,7 @@ export type View =
   | 'account'
   | 'compare'
   | 'stats'
+  | 'timeline'
 
 interface AppState {
   view: View

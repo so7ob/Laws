@@ -5,6 +5,7 @@ import { Header } from '@/components/common/header'
 import { Footer } from '@/components/common/footer'
 import { ReadingProgress } from '@/components/common/reading-progress'
 import { KeyboardShortcuts } from '@/components/common/keyboard-shortcuts'
+import { PageTransition } from '@/components/common/page-transition'
 import { HomeView } from '@/components/public/home-view'
 import { LegislationsView } from '@/components/public/legislations-view'
 import { LegislationDetailView } from '@/components/public/legislation-detail-view'
@@ -13,6 +14,7 @@ import { NewsView, NewsDetailView, PublicPageView } from '@/components/public/co
 import { AccountView } from '@/components/public/account-view'
 import { CompareView } from '@/components/public/compare-view'
 import { StatsView } from '@/components/public/stats-view'
+import { TimelineView } from '@/components/public/timeline-view'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { useEffect } from 'react'
 
@@ -49,7 +51,9 @@ export default function Home() {
       {view !== 'admin' && <Header />}
       {view !== 'admin' && view !== 'home' && <ReadingProgress />}
       <main id="main-content" className="flex-1 w-full">
-        <ViewRouter view={view} />
+        <PageTransition trigger={view}>
+          <ViewRouter view={view} />
+        </PageTransition>
       </main>
       {view !== 'admin' && <Footer />}
       {view !== 'admin' && <KeyboardShortcuts />}
@@ -94,6 +98,8 @@ function ViewRouter({ view }: { view: string }) {
       return <CompareView />
     case 'stats':
       return <StatsView />
+    case 'timeline':
+      return <TimelineView />
     case 'admin':
       return <AdminShell />
     default:

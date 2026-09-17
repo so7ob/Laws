@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Keyboard, Home, Search, Scale, User, GitCompare, Shield, Moon, Sun, ArrowUp } from 'lucide-react'
+import { Keyboard, Home, Search, Scale, User, GitCompare, GitBranch, Shield, Moon, Sun, ArrowUp } from 'lucide-react'
 
 interface Shortcut {
   keys: string[]
@@ -41,6 +41,7 @@ export function KeyboardShortcuts() {
     { keys: ['g', 'h'], description: 'الذهاب للرئيسية', icon: Home, action: goHome },
     { keys: ['g', 's'], description: 'البحث المتقدم', icon: Search, action: () => navigate('search') },
     { keys: ['g', 'l'], description: 'كل التشريعات', icon: Scale, action: () => navigate('legislations') },
+    { keys: ['g', 't'], description: 'الخط الزمني', icon: GitBranch, action: () => navigate('timeline') },
     { keys: ['g', 'a'], description: 'حساب الباحث', icon: User, action: () => navigate('account') },
     { keys: ['g', 'c'], description: 'مقارنة التشريعات', icon: GitCompare, action: () => navigate('compare') },
     { keys: ['g', 'n'], description: 'الأخبار', icon: Scale, action: () => navigate('news') },

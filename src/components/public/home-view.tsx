@@ -33,6 +33,7 @@ import {
   Building2,
   CheckCircle2,
   BarChart3,
+  GitBranch,
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDate, relativeTime } from '@/lib/constants'
 import { RecentlyViewed } from '@/components/public/recently-viewed'
@@ -60,7 +61,7 @@ interface Stats {
 const QUICK_LINKS = [
   { label: 'الدستور', target: 'constitution' as const, icon: BookOpen, color: 'from-[#AC4459] to-[#7a2f3e]' },
   { label: 'القوانين', target: 'legislations' as const, icon: Scale, color: 'from-[#344B61] to-[#243446]' },
-  { label: 'أحدث التشريعات', target: 'recent' as const, icon: History, color: 'from-[#8b6f47] to-[#5a472f]' },
+  { label: 'الخط الزمني', target: 'timeline' as const, icon: GitBranch, color: 'from-[#8b6f47] to-[#5a472f]' },
   { label: 'الأكثر اطلاعًا', target: 'popular' as const, icon: TrendingUp, color: 'from-[#6b8e9e] to-[#3e5e72]' },
   { label: 'الأرشيف', target: 'archive' as const, icon: Archive, color: 'from-[#5a472f] to-[#3e3120]' },
   { label: 'البحث المتقدم', target: 'search' as const, icon: Search, color: 'from-[#7a2f3e] to-[#5a1f2c]' },
