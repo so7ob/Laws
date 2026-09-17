@@ -89,6 +89,8 @@ interface LegislationLite {
   year?: number | null
   type?: { nameAr: string } | null
   authority?: { nameAr: string } | null
+  legalStatus?: string | null
+  workflowStatus?: string | null
 }
 
 interface FavoriteItem {
@@ -395,7 +397,7 @@ function FavoritesTab() {
                 {fav.article?.publishedNumber && (
                   <div className="flex items-center gap-1.5">
                     <FileText className="size-3.5" />
-                    <span>المادة رقم: {fav.article.publishedNumber.toLocaleString('ar-EG')}</span>
+                    <span>المادة رقم: {fav.article.publishedNumber}</span>
                   </div>
                 )}
               </div>

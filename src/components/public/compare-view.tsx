@@ -741,7 +741,7 @@ function ComparisonResult({
                           variant="outline"
                           className="font-mono text-xs"
                         >
-                          {num.toLocaleString('ar-EG')}
+                          {num}
                         </Badge>
                       </div>
                       <div
