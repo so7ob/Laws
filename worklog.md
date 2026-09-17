@@ -10,7 +10,7 @@ Building a comprehensive Yemeni Legislation Platform using Next.js 16 + Prisma +
 
 ---
 
-## Phases 1-9 Summary (COMPLETED)
+## Phases 1-10 Summary (COMPLETED)
 
 ### Phase 1: Initial Foundation
 ### Phase 2: Enhancement Round (account, compare, theme toggle)
@@ -21,71 +21,63 @@ Building a comprehensive Yemeni Legislation Platform using Next.js 16 + Prisma +
 ### Phase 7: Feedback, Settings & Search (rating system, settings tab, favorite from search)
 ### Phase 8: Timeline View & Page Transitions (chronological timeline, page transitions)
 ### Phase 9: Share Dialog, Reading Time & Visual Polish (share, reading time, copy article, CSS utilities)
+### Phase 10: Citation Generator & Search Suggestions (citation, did-you-mean, Arabic normalization)
 
 ---
 
-## Phase 10 Status (Citation Generator & Search Suggestions - COMPLETED)
+## Phase 11 Status (Glossary & FAQ - COMPLETED)
 
 ### Current Assessment
-Phase 9 left the platform with share dialog and reading time. Phase 10 focused on:
-1. **Legal citation generator** with 3 citation formats
-2. **"Did you mean?" search suggestions** using Levenshtein distance
-3. **Arabic text normalization** for fuzzy matching
-4. **Enhanced empty states** with suggestion chips
+Phase 10 left the platform with citation generator and search suggestions. Phase 11 focused on:
+1. **Legal Glossary** (معجم المصطلحات القانونية) - 38 legal terms with definitions and categories
+2. **FAQ Page** (الأسئلة الشائعة) - 21 frequently asked questions with accordion
+3. **Navigation integration** - both views added to header, footer, breadcrumb, store, page router
 
 ### Goals / Completed Modifications / Verification Results
 
-#### 1. Legal Citation Generator
-- **Utility**: `src/lib/citation.ts`
-  - `generateCitation(data, format)`: Generates formatted legal citations
-  - 3 formats: 'simple' (short), 'full' (detailed), 'academic' (reference-style)
-  - Includes: type, title, number, year, authority, issue date, effective date, official journal
-  - Arabic date formatting with `toLocaleDateString('ar-EG-u-nu-arab')`
-- **Component**: `src/components/public/citation-dialog.tsx`
-  - Dialog with 3 format selector buttons (مختصر، كامل، أكاديمي)
-  - Live citation preview with right-border accent
-  - Copy citation button with checkmark feedback
-  - Info note about auto-generated citations
-- **Integration**: Added to legislation detail action buttons (between Share and Favorite)
-- **Verification**: VLM rated 9/10 - "format options clearly visible... generated citation text displayed... clean layout"
+#### 1. Legal Glossary View
+- **Component**: `src/components/public/glossary-view.tsx`
+  - 38 legal terms with definitions, categories, and synonyms
+  - 9 categories: دستوري، مدني، جنائي، تجاري، إداري، عمالي، أحوال شخصية، إجرائي
+  - Category filter chips with counts and icons
+  - Search input for filtering terms
+  - Terms grouped by first letter with gradient letter markers
+  - Cards with term title, category badge (color-coded), definition, synonyms
+  - Hover effects: card lift, title color change, staggered animations
+  - Empty state with BookOpen icon
+- **Terms include**: الدستور، السيادة، العقد، الجريمة، التاجر، القرار الإداري، عقد العمل، الزواج، الاختصاص، and more
+- **Verification**: agent-browser confirms "معجم المصطلحات القانونية" heading, 38 terms, category chips
 
-#### 2. "Did You Mean?" Search Suggestions
-- **Utility**: `src/lib/search-suggest.ts`
-  - `normalizeArabic(text)`: Removes diacritics, normalizes alef/ya/ta marbuta variants
-  - `levenshtein(a, b)`: String distance algorithm
-  - `suggestQuery(query, dictionary, maxDistance, maxSuggestions)`: Returns similar terms
-  - `LEGAL_TERMS_DICTIONARY`: 120+ common legal terms (قانون، دستور، محكمة، etc.)
-  - `expandDictionary(titles)`: Extracts words from legislation titles
-- **Integration**: Added to search view empty state
-  - When search returns 0 legislation results, shows "هل تقصد:" (Did you mean:)
-  - Suggestion chips with hover effects
-  - Click to re-search with suggested term
-  - SearchX icon for visual feedback
-- **Verification**: Lint passes, feature integrated correctly
+#### 2. FAQ View
+- **Component**: `src/components/public/faq-view.tsx`
+  - 21 frequently asked questions with answers
+  - 6 categories: عام، بحث، تشريعات، حساب الباحث، تقني
+  - Category filter chips with counts
+  - Search input for filtering questions
+  - Accordion interface (expand/collapse) with numbered badges
+  - Active accordion item badge changes to primary color
+  - Contact prompt card at bottom
+  - Empty state with HelpCircle icon
+- **Questions cover**: platform overview, search tips, legislation features, account features, technical questions
+- **Verification**: agent-browser confirms "الأسئلة الشائعة" heading, 21 questions, accordion
 
-#### 3. Arabic Text Normalization
-- Handles common Arabic spelling variations:
-  - Alef variants: أ، إ، آ → ا
-  - Ya variants: ى → ي
-  - Ta marbuta: ة → ه
-  - Tashkeel removal
-  - Tatweel removal
-
-#### 4. Enhanced Empty States
-- **Search no results**: Now shows SearchX icon + "هل تقصد:" with clickable suggestion chips
-- Suggestion chips have primary color with hover effect
+#### 3. Navigation Integration
+- **Store**: Added 'glossary' and 'faq' to View type union
+- **Page router**: Added cases for glossary and FAQ in ViewRouter
+- **Header nav**: Added both to المنظومة menu with BookOpen and HelpCircle icons
+- **Footer**: Added to quick links section
+- **Breadcrumb**: Added to VIEW_LABELS with appropriate icons
 
 ### Verification Results
 - ✅ Lint passes with zero errors
 - ✅ agent-browser tests confirm:
-  - "استشهاد" (Citation) button visible on legislation detail
-  - Citation dialog opens with 3 format options and preview
+  - Glossary view loads with 38 terms, 9 categories, letter grouping
+  - FAQ view loads with 21 questions, 6 categories, accordion interface
   - No console errors or page errors
-- ✅ VLM assessment: Citation dialog 9/10 - "format options clearly visible... clean layout"
+- ✅ VLM assessment: 8/10 - "clean, professional, highly usable... excellent use of whitespace... color-coded tags... intuitive navigation"
 - ✅ Screenshots saved:
-  - `detail-citation.png` (detail with citation button)
-  - `citation-dialog.png` (citation dialog open)
-  - `did-you-mean.png` (search with suggestions)
+  - `glossary-view.png` (legal glossary with categories)
+  - `faq-view.png` (FAQ with accordion)
 
 ---
 
@@ -95,7 +87,7 @@ Phase 9 left the platform with share dialog and reading time. Phase 10 focused o
 3. **Simplified features**: OCR, real auth, PDF.js viewer use mock data.
 4. **Admin API security**: All admin endpoints are currently open.
 5. **localStorage dependency**: Recently Viewed, Search History, Settings depend on localStorage.
-6. **Citation is auto-generated**: Should be reviewed before academic use (noted in dialog).
+6. **Glossary terms are static**: Not stored in database (could be moved to DB in future).
 
 ## Priority Recommendations for Next Phase
 1. **Add user authentication** (NextAuth.js) to secure admin endpoints

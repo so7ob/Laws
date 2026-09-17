@@ -15,6 +15,8 @@ import { AccountView } from '@/components/public/account-view'
 import { CompareView } from '@/components/public/compare-view'
 import { StatsView } from '@/components/public/stats-view'
 import { TimelineView } from '@/components/public/timeline-view'
+import { GlossaryView } from '@/components/public/glossary-view'
+import { FAQView } from '@/components/public/faq-view'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { useEffect } from 'react'
 
@@ -100,6 +102,10 @@ function ViewRouter({ view }: { view: string }) {
       return <StatsView />
     case 'timeline':
       return <TimelineView />
+    case 'glossary':
+      return <GlossaryView />
+    case 'faq':
+      return <FAQView />
     case 'admin':
       return <AdminShell />
     default:

@@ -19,6 +19,8 @@ export type View =
   | 'compare'
   | 'stats'
   | 'timeline'
+  | 'glossary'
+  | 'faq'
 
 interface AppState {
   view: View

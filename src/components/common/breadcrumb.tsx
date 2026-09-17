@@ -1,7 +1,7 @@
 'use client'
 
 import { useAppStore } from '@/store/app-store'
-import { ChevronLeft, Home, Scale, Search, Newspaper, FileText, BookOpen, GitCompare, GitBranch, User, Shield, History, Archive, Star } from 'lucide-react'
+import { ChevronLeft, Home, Scale, Search, Newspaper, FileText, BookOpen, GitCompare, GitBranch, User, Shield, History, Archive, Star, HelpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface Crumb {
@@ -26,6 +26,8 @@ const VIEW_LABELS: Record<string, { label: string; icon: any }> = {
   compare: { label: 'مقارنة التشريعات', icon: GitCompare },
   stats: { label: 'إحصاءات المنصة', icon: FileText },
   timeline: { label: 'الخط الزمني', icon: GitBranch },
+  glossary: { label: 'معجم المصطلحات', icon: BookOpen },
+  faq: { label: 'الأسئلة الشائعة', icon: HelpCircle },
   'legislation-detail': { label: 'تفاصيل التشريع', icon: Scale },
   admin: { label: 'لوحة الإدارة', icon: Shield },
 }

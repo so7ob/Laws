@@ -30,6 +30,7 @@ import {
   Bookmark,
   BarChart3,
   GitBranch,
+  HelpCircle,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -55,6 +56,8 @@ const NAV_GROUPS = [
     items: [
       { label: 'المنظومة التشريعية', target: 'legislative-system', icon: Network },
       { label: 'إحصاءات المنصة', target: 'stats', icon: BarChart3 },
+      { label: 'معجم المصطلحات', target: 'glossary', icon: BookOpen },
+      { label: 'الأسئلة الشائعة', target: 'faq', icon: HelpCircle },
       { label: 'السياسات والأدلة', target: 'policies', icon: FileText },
       { label: 'الأخبار', target: 'news', icon: Newspaper },
     ],

@@ -95,6 +95,8 @@ export function Footer() {
                 { label: 'التشريعات', target: 'legislations' as const },
                 { label: 'البحث المتقدم', target: 'search' as const },
                 { label: 'إحصاءات المنصة', target: 'stats' as const },
+                { label: 'معجم المصطلحات', target: 'glossary' as const },
+                { label: 'الأسئلة الشائعة', target: 'faq' as const },
                 { label: 'المنظومة التشريعية', target: 'legislative-system' as const },
                 { label: 'الأخبار', target: 'news' as const },
               ].map((link) => (
