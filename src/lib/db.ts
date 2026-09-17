@@ -1,16 +1,13 @@
-import { PrismaClient } from '@prisma/client'
-
-// In CI/production, the generated client might not have PrismaClient as a named export
-// Use default export fallback
-const PrismaClientImpl = (PrismaClient as any).default ?? PrismaClient
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PrismaClient: any = require('@prisma/client').PrismaClient || require('@prisma/client').default || require('@prisma/client')
 
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
+  prisma: any | undefined
 }
 
 export const db =
   globalForPrisma.prisma ??
-  new PrismaClientImpl({
+  new PrismaClient({
     log: ['query'],
   })
 
