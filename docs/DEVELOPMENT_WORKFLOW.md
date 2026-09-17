@@ -67,7 +67,6 @@ git push -u origin feat/NNN-description
 - تحقق من حالة `merged` ووجود النتيجة في `origin/develop`.
 - انتظر فحوص ما بعد الدمج.
 - أغلق القضية بدليل.
-- نظّف فرع المهمة.
 - حدّث `develop` المحلية: `git checkout develop && git pull`.
 
 ## 9. التعامل مع التعارض
