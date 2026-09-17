@@ -837,22 +837,36 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
 function ArticleVersionsDialog({ article, onClose }: { article: any; onClose: () => void }) {
   const [compareA, setCompareA] = useState<string | null>(null)
   const [compareB, setCompareB] = useState<string | null>(null)
-  const [allVersions, setAllVersions] = useState<any[]>(article.versions || [])
-  const [loading, setLoading] = useState(false)
+  const [allVersions, setAllVersions] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const slug = useAppStore((s) => s.slug)
 
   useEffect(() => {
-    if (!slug) return
+    if (!slug || !article.id) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
+    setError(null)
     fetch(`/api/legislations/${slug}/versions`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then((d) => {
         const found = (d.items || []).find((a: any) => a.id === article.id)
-        if (found?.versions) setAllVersions(found.versions)
+        if (found?.versions && found.versions.length > 0) {
+          setAllVersions(found.versions)
+        } else {
+          // Fallback: use the version from the article data if API didn't return more
+          setAllVersions(article.versions || [])
+        }
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch((err) => {
+        setError(err.message)
+        setAllVersions(article.versions || [])
+        setLoading(false)
+      })
   }, [slug, article.id])
 
   // Sort by versionNo descending
@@ -869,7 +883,7 @@ function ArticleVersionsDialog({ article, onClose }: { article: any; onClose: ()
             <div>
               <div>تاريخ نسخ المادة</div>
               <div className="text-sm font-normal text-muted-foreground mt-0.5">
-                مادة ({article.publishedNumber}) • {sortedVersions.length.toLocaleString('ar-EG')} نسخة
+                مادة ({article.publishedNumber}) • {loading ? '...' : `${sortedVersions.length.toLocaleString('ar-EG')} نسخة`}
               </div>
             </div>
           </DialogTitle>
@@ -878,6 +892,17 @@ function ArticleVersionsDialog({ article, onClose }: { article: any; onClose: ()
           </DialogDescription>
         </DialogHeader>
 
+        {error && (
+          <div className="rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm text-destructive">
+            تعذر تحميل النسخ: {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-pulse text-muted-foreground">جارٍ تحميل النسخ...</div>
+          </div>
+        ) : (
         <ScrollArea className="flex-1 max-h-[60vh]">
           <div className="space-y-3 pr-1">
             {sortedVersions.map((v: any, i: number) => {
@@ -972,6 +997,7 @@ function ArticleVersionsDialog({ article, onClose }: { article: any; onClose: ()
             )}
           </div>
         </ScrollArea>
+        )}
 
         {compareA && compareB && (
           <VersionCompareBar
