@@ -81,58 +81,9 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 shadow-sm">
       <div className="container mx-auto max-w-7xl px-4">
-        <div className="flex h-16 items-center justify-between gap-3">
-          {/* Logo */}
-          <button
-            onClick={() => navigate('home')}
-            className="flex items-center gap-3 shrink-0 hover:opacity-80 transition-opacity group"
-            aria-label="الصفحة الرئيسية"
-          >
-            <div className="relative h-10 w-10 rounded-lg bg-gradient-to-br from-[#AC4459] to-[#344B61] flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow overflow-hidden">
-              <Scale className="h-6 w-6 text-white relative z-10" />
-              <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors" />
-            </div>
-            <div className="hidden sm:block text-right">
-              <div className="font-bold text-base leading-tight text-secondary">
-                منصة التشريعات اليمنية
-              </div>
-              <div className="text-[10px] text-muted-foreground leading-tight">
-                مرجعيتك القانونية الموثوقة
-              </div>
-            </div>
-          </button>
-
-          {/* Search */}
-          <form onSubmit={onSearchSubmit} className="flex-1 max-w-xl mx-2">
-            <div className="relative group">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <Input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث في النصوص القانونية..."
-                className="pr-10 pl-4 h-10 bg-background/80 focus-visible:ring-primary/40"
-              />
-            </div>
-          </form>
-
-          {/* Right Actions */}
-          <div className="flex items-center gap-1">
-            {/* Account */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 hidden sm:inline-flex"
-              onClick={() => navigate('account')}
-              title="حساب الباحث"
-              aria-label="حساب الباحث"
-            >
-              <User className="h-4 w-4" />
-            </Button>
-
-            {/* Theme toggle */}
-            <ThemeToggle />
-
+        <div className="flex h-16 items-center gap-3" dir="rtl">
+          {/* 1. أزرار التنقل - في اليمين */}
+          <div className="flex items-center gap-1 shrink-0">
             {/* Desktop Nav */}
             <div className="hidden lg:block">
               <NavigationMenu dir="rtl">
@@ -143,7 +94,7 @@ export function Header() {
                         {group.label}
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid w-[260px] gap-1 p-2">
+                        <ul className="grid w-[260px] gap-1 p-2" dir="rtl">
                           {group.items.map((item) => {
                             const Icon = item.icon
                             return (
@@ -187,11 +138,63 @@ export function Header() {
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
+
+          {/* 2. مربع البحث - في الوسط */}
+          <form onSubmit={onSearchSubmit} className="flex-1 max-w-xl">
+            <div className="relative group">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ابحث في النصوص القانونية..."
+                className="pr-10 pl-4 h-10 bg-background/80 focus-visible:ring-primary/40"
+              />
+            </div>
+          </form>
+
+          {/* 3. أزرار سريعة + اسم المنصة - في اليسار */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Account */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 hidden sm:inline-flex"
+              onClick={() => navigate('account')}
+              title="حساب الباحث"
+              aria-label="حساب الباحث"
+            >
+              <User className="h-4 w-4" />
+            </Button>
+
+            {/* Theme toggle */}
+            <ThemeToggle />
+
+            {/* Logo + name */}
+            <button
+              onClick={() => navigate('home')}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity group"
+              aria-label="الصفحة الرئيسية"
+            >
+              <div className="hidden sm:block text-left">
+                <div className="font-bold text-base leading-tight text-secondary">
+                  منصة التشريعات اليمنية
+                </div>
+                <div className="text-[10px] text-muted-foreground leading-tight">
+                  مرجعيتك القانونية الموثوقة
+                </div>
+              </div>
+              <div className="relative h-10 w-10 rounded-lg bg-gradient-to-br from-[#AC4459] to-[#344B61] flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow overflow-hidden">
+                <Scale className="h-6 w-6 text-white relative z-10" />
+                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors" />
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Nav */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-border/40 py-3 space-y-1 max-h-[80vh] overflow-y-auto">
+          <div className="lg:hidden border-t border-border/40 py-3 space-y-1 max-h-[80vh] overflow-y-auto" dir="rtl">
             <button
               onClick={() => {
                 navigate('account')

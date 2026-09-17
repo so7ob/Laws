@@ -314,7 +314,7 @@ export function LegislationDetailView() {
               </div>
             </div>
             {/* Action tools */}
-            <div className="flex lg:flex-col gap-2 lg:min-w-[140px] no-print">
+            <div className="flex lg:flex-col gap-2 lg:min-w-[140px] no-print" dir="rtl">
               <Button variant="outline" size="sm" onClick={() => window.print()}>
                 <Printer className="h-4 w-4 ml-1.5" />
                 <span className="hidden sm:inline">طباعة</span>
@@ -358,9 +358,9 @@ export function LegislationDetailView() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="overflow-x-auto">
-          <TabsList className="w-full justify-start mb-4 h-auto flex-wrap">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full" dir="rtl">
+        <div className="overflow-x-auto" dir="rtl">
+          <TabsList className="w-full justify-start mb-4 h-auto flex-wrap" dir="rtl">
             <TabsTrigger value="overview" className="gap-1.5">
               <BookOpen className="h-4 w-4" />
               <span>النظرة العامة</span>
@@ -480,19 +480,19 @@ function ReadingTimeStat({ articles, preamble }: { articles: any[]; preamble: st
 
 function OverviewTab({ data }: { data: LegislationDetail }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-2 space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" dir="rtl">
+      <div className="lg:col-span-2 space-y-6" dir="rtl">
         {/* Preamble */}
         {data.preamble && (
-          <Card>
+          <Card dir="rtl">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
                 الديباجة
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="legal-text leading-loose text-base">{data.preamble}</p>
+            <CardContent dir="rtl">
+              <p className="legal-text leading-loose text-base" dir="rtl">{data.preamble}</p>
             </CardContent>
           </Card>
         )}
@@ -636,7 +636,7 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
   }, [filtered])
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[260px,1fr] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[260px,1fr] gap-6" dir="rtl">
       {/* Article Navigation Sidebar - sticky */}
       <div className="hidden lg:block">
         <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-hidden">
@@ -723,9 +723,9 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
           const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
           const parts = articleSearch ? highlight(v?.textContent || '', articleSearch) : null
           return (
-            <Card key={a.id} id={`article-${a.id}`} className="border-border/60 hover:border-primary/30 transition-colors group">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-4">
+            <Card key={a.id} id={`article-${a.id}`} className="border-border/60 hover:border-primary/30 transition-colors group" dir="rtl">
+              <CardContent className="p-5" dir="rtl">
+                <div className="flex items-start gap-4" dir="rtl">
                   <div className="shrink-0">
                     <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/15 to-secondary/15 flex items-center justify-center article-number font-bold text-primary text-lg border border-primary/20">
                       {a.publishedNumber || (idx + 1)}
