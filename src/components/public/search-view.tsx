@@ -17,11 +17,12 @@ import {
 import {
   Search, Filter, FileText, Scale, LayoutGrid, Download,
   ChevronLeft, Hash, Calendar, Building2, TrendingUp,
-  Target, X, Sparkles, BarChart3, Clock, Star,
+  Target, X, Sparkles, BarChart3, Clock, Star, SearchX,
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDateShort, highlight, relativeTime } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
 import { exportToCSV } from '@/lib/csv-export'
+import { suggestQuery, LEGAL_TERMS_DICTIONARY } from '@/lib/search-suggest'
 import { toast } from 'sonner'
 
 interface SearchResponse {
@@ -376,8 +377,33 @@ export function SearchView() {
           <div className="space-y-3">
             {activeHit === 'legislations' && data.items.length === 0 && (
               <Card className="border-dashed">
-                <CardContent className="py-10 text-center text-muted-foreground">
-                  لا توجد تشريعات مطابقة لبحثك
+                <CardContent className="py-10 text-center space-y-3">
+                  <SearchX className="h-10 w-10 mx-auto text-muted-foreground/50" />
+                  <p className="text-muted-foreground">لا توجد تشريعات مطابقة لبحثك</p>
+                  {/* Did you mean? */}
+                  {(() => {
+                    const suggestions = suggestQuery(query, LEGAL_TERMS_DICTIONARY, 2, 4)
+                    if (suggestions.length === 0) return null
+                    return (
+                      <div className="flex flex-col items-center gap-2 pt-2">
+                        <p className="text-sm text-muted-foreground">هل تقصد:</p>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {suggestions.map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => {
+                                setQuery(s)
+                                setPage(1)
+                              }}
+                              className="px-3 py-1.5 rounded-full bg-primary/10 hover:bg-primary hover:text-primary-foreground text-primary text-sm font-medium transition-colors border border-primary/30"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })()}
                 </CardContent>
               </Card>
             )}

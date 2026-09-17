@@ -10,7 +10,7 @@ Building a comprehensive Yemeni Legislation Platform using Next.js 16 + Prisma +
 
 ---
 
-## Phases 1-8 Summary (COMPLETED)
+## Phases 1-9 Summary (COMPLETED)
 
 ### Phase 1: Initial Foundation
 ### Phase 2: Enhancement Round (account, compare, theme toggle)
@@ -20,75 +20,72 @@ Building a comprehensive Yemeni Legislation Platform using Next.js 16 + Prisma +
 ### Phase 6: Visual Diff, Stats & Polish (word-level diff, stats page, enhanced footer, search history)
 ### Phase 7: Feedback, Settings & Search (rating system, settings tab, favorite from search)
 ### Phase 8: Timeline View & Page Transitions (chronological timeline, page transitions)
+### Phase 9: Share Dialog, Reading Time & Visual Polish (share, reading time, copy article, CSS utilities)
 
 ---
 
-## Phase 9 Status (Share Dialog, Reading Time & Visual Polish - COMPLETED)
+## Phase 10 Status (Citation Generator & Search Suggestions - COMPLETED)
 
 ### Current Assessment
-Phase 8 left the platform with timeline and page transitions. Phase 9 focused on:
-1. **Share dialog** with social media buttons
-2. **Reading time estimate** on legislation detail
-3. **Copy article text** button on each article card
-4. **Enhanced CSS utilities** for visual polish
-5. **Replaced copy link** with full-featured share dialog
+Phase 9 left the platform with share dialog and reading time. Phase 10 focused on:
+1. **Legal citation generator** with 3 citation formats
+2. **"Did you mean?" search suggestions** using Levenshtein distance
+3. **Arabic text normalization** for fuzzy matching
+4. **Enhanced empty states** with suggestion chips
 
 ### Goals / Completed Modifications / Verification Results
 
-#### 1. Share Dialog with Social Media
-- **Component**: `src/components/public/share-dialog.tsx`
-  - Dialog with 6 social platforms: Twitter, Facebook, LinkedIn, WhatsApp, Telegram, Email
-  - Each platform opens share URL in new tab with pre-filled text
-  - Copy link section with URL input and copy button
-  - Copy button shows "تم" (done) with checkmark for 2 seconds
-  - Toast notification on copy
-- **Integration**: Replaced the "نسخ الرابط" button in legislation detail with `<ShareDialog>`
-- **Verification**: VLM rated 9/10 - "clean, icons are clear, copy function is prominent"
+#### 1. Legal Citation Generator
+- **Utility**: `src/lib/citation.ts`
+  - `generateCitation(data, format)`: Generates formatted legal citations
+  - 3 formats: 'simple' (short), 'full' (detailed), 'academic' (reference-style)
+  - Includes: type, title, number, year, authority, issue date, effective date, official journal
+  - Arabic date formatting with `toLocaleDateString('ar-EG-u-nu-arab')`
+- **Component**: `src/components/public/citation-dialog.tsx`
+  - Dialog with 3 format selector buttons (مختصر، كامل، أكاديمي)
+  - Live citation preview with right-border accent
+  - Copy citation button with checkmark feedback
+  - Info note about auto-generated citations
+- **Integration**: Added to legislation detail action buttons (between Share and Favorite)
+- **Verification**: VLM rated 9/10 - "format options clearly visible... generated citation text displayed... clean layout"
 
-#### 2. Reading Time Estimate
-- **Component**: Added `ReadingTimeStat` function to `legislation-detail-view.tsx`
-  - Calculates total word count from preamble + all article current versions
-  - Estimates reading time at 200 words/minute for Arabic
-  - Shows as 5th QuickStat card with gradient background
-  - Displays "X دقيقة" (X minutes) with Clock icon
-- **Integration**: Added to QuickStats grid (now 5 cards: articles, attachments, amendments, relations, reading time)
-- **Verification**: agent-browser confirms "٢ دقيقة" + "وقت القراءة" visible on constitution detail
+#### 2. "Did You Mean?" Search Suggestions
+- **Utility**: `src/lib/search-suggest.ts`
+  - `normalizeArabic(text)`: Removes diacritics, normalizes alef/ya/ta marbuta variants
+  - `levenshtein(a, b)`: String distance algorithm
+  - `suggestQuery(query, dictionary, maxDistance, maxSuggestions)`: Returns similar terms
+  - `LEGAL_TERMS_DICTIONARY`: 120+ common legal terms (قانون، دستور، محكمة، etc.)
+  - `expandDictionary(titles)`: Extracts words from legislation titles
+- **Integration**: Added to search view empty state
+  - When search returns 0 legislation results, shows "هل تقصد:" (Did you mean:)
+  - Suggestion chips with hover effects
+  - Click to re-search with suggested term
+  - SearchX icon for visual feedback
+- **Verification**: Lint passes, feature integrated correctly
 
-#### 3. Copy Article Text Button
-- **Enhancement**: Added to article cards in ArticlesTab
-  - New "نسخ نص المادة" button with Copy icon
-  - Copies article's current version text to clipboard
-  - Toast notification on success/failure
-  - Positioned between "أضف للمفضلة" and "نسخ الرابط"
-- **Verification**: Lint passes, no errors
+#### 3. Arabic Text Normalization
+- Handles common Arabic spelling variations:
+  - Alef variants: أ، إ، آ → ا
+  - Ya variants: ى → ي
+  - Ta marbuta: ة → ه
+  - Tashkeel removal
+  - Tatweel removal
 
-#### 4. Enhanced CSS Utilities
-- **File**: `src/app/globals.css` - added new utility classes:
-  - `.empty-state-icon`: Gradient background with dashed border ring
-  - `.divider-diamond`: Decorative section divider with diamond shape
-  - `.card-gradient-border`: Gradient border on hover (mask-based)
-  - `.badge-shine`: Shine sweep effect on hover
-  - `.fab`: Floating action button with shadow
-  - `.reading-time-pill`: Inline pill for reading time
-  - `.article-card-active`: Active state for scroll spy
-- **Verification**: All classes available for use in components
-
-#### 5. Removed Unused Code
-- Cleaned up the `handleCopyLink` function and `linkCopied` state (replaced by ShareDialog)
-- Removed unused `Share2` and `Copy` icon imports from the old copy link button
+#### 4. Enhanced Empty States
+- **Search no results**: Now shows SearchX icon + "هل تقصد:" with clickable suggestion chips
+- Suggestion chips have primary color with hover effect
 
 ### Verification Results
 - ✅ Lint passes with zero errors
 - ✅ agent-browser tests confirm:
-  - "مشاركة" (Share) button visible on legislation detail
-  - Share dialog opens with 6 social platforms + copy link
-  - "٢ دقيقة" + "وقت القراءة" (reading time) visible
-  - Copy article text button on article cards
+  - "استشهاد" (Citation) button visible on legislation detail
+  - Citation dialog opens with 3 format options and preview
   - No console errors or page errors
-- ✅ VLM assessment: Share dialog 9/10 - "clean, icons are clear, copy function is prominent"
+- ✅ VLM assessment: Citation dialog 9/10 - "format options clearly visible... clean layout"
 - ✅ Screenshots saved:
-  - `detail-enhanced.png` (detail with share + reading time)
-  - `share-dialog.png` (share dialog open)
+  - `detail-citation.png` (detail with citation button)
+  - `citation-dialog.png` (citation dialog open)
+  - `did-you-mean.png` (search with suggestions)
 
 ---
 
@@ -98,7 +95,7 @@ Phase 8 left the platform with timeline and page transitions. Phase 9 focused on
 3. **Simplified features**: OCR, real auth, PDF.js viewer use mock data.
 4. **Admin API security**: All admin endpoints are currently open.
 5. **localStorage dependency**: Recently Viewed, Search History, Settings depend on localStorage.
-6. **Share URLs are client-side**: Social share URLs are constructed client-side (no server rendering).
+6. **Citation is auto-generated**: Should be reviewed before academic use (noted in dialog).
 
 ## Priority Recommendations for Next Phase
 1. **Add user authentication** (NextAuth.js) to secure admin endpoints

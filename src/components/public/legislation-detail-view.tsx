@@ -69,6 +69,7 @@ import { diffTexts, mergeSegments, getDiffStats } from '@/lib/diff'
 import { toast } from 'sonner'
 import { LegislationFeedback } from '@/components/public/legislation-feedback'
 import { ShareDialog } from '@/components/public/share-dialog'
+import { CitationDialog } from '@/components/public/citation-dialog'
 
 interface LegislationDetail {
   id: string
@@ -319,6 +320,20 @@ export function LegislationDetailView() {
                 <span className="hidden sm:inline">طباعة</span>
               </Button>
               <ShareDialog legislationTitle={data.officialTitle} />
+              <CitationDialog
+                data={{
+                  officialTitle: data.officialTitle,
+                  type: data.type,
+                  number: data.number,
+                  year: data.year,
+                  authority: data.authority,
+                  issueDate: data.issueDate,
+                  publicationDate: data.publicationDate,
+                  effectiveDate: data.effectiveDate,
+                  officialJournal: data.officialJournals?.[0],
+                }}
+                legislationTitle={data.officialTitle}
+              />
               <Button variant="outline" size="sm" onClick={handleFavorite}>
                 <Star className="h-4 w-4 ml-1.5" />
                 <span className="hidden sm:inline">أضف للمفضلة</span>
