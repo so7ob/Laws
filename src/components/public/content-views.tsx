@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Newspaper, ChevronLeft, Calendar, ArrowRight } from 'lucide-react'
 import { formatDate } from '@/lib/constants'
+import { Breadcrumb } from '@/components/common/breadcrumb'
 
 export function NewsView() {
   const openNews = useAppStore((s) => s.openNews)
@@ -26,6 +27,7 @@ export function NewsView() {
 
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8">
+      <Breadcrumb />
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-secondary mb-2 flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#AC4459] to-[#344B61] flex items-center justify-center">
@@ -112,11 +114,7 @@ export function NewsDetailView() {
 
   return (
     <article className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-        <button onClick={() => navigate('news')} className="hover:text-primary">الأخبار</button>
-        <ChevronLeft className="h-3 w-3" />
-        <span className="text-foreground truncate">{item.title}</span>
-      </div>
+      <Breadcrumb customCrumbs={[{ label: item.title, icon: Newspaper }]} />
       <div className="flex items-center gap-2 mb-3">
         <Badge className="bg-primary/10 text-primary border-primary/30">
           <Calendar className="h-3 w-3 ml-1" />
@@ -168,11 +166,7 @@ export function PublicPageView() {
 
   return (
     <article className="container mx-auto max-w-3xl px-4 py-8">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-        <button onClick={() => navigate('home')} className="hover:text-primary">الرئيسية</button>
-        <ChevronLeft className="h-3 w-3" />
-        <span className="text-foreground truncate">{item.title}</span>
-      </div>
+      <Breadcrumb customCrumbs={[{ label: item.title }]} />
       <h1 className="text-3xl font-bold text-secondary mb-3">{item.title}</h1>
       {item.intro && <p className="text-base text-muted-foreground mb-6 leading-relaxed border-b-2 border-primary/30 pb-4">{item.intro}</p>}
       {item.content && <p className="legal-text text-base mb-8 leading-loose">{item.content}</p>}

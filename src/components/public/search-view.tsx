@@ -20,6 +20,7 @@ import {
   Target, X, Sparkles, BarChart3,
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDateShort, highlight } from '@/lib/constants'
+import { Breadcrumb } from '@/components/common/breadcrumb'
 
 interface SearchResponse {
   items: any[]
@@ -101,6 +102,7 @@ export function SearchView() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
+      <Breadcrumb />
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-secondary mb-2 flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#AC4459] to-[#344B61] flex items-center justify-center">

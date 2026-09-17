@@ -266,6 +266,11 @@ export function HomeView() {
         </div>
       </section>
 
+      {/* Recently Viewed */}
+      <section className="container mx-auto max-w-7xl px-4 pb-8">
+        <RecentlyViewed />
+      </section>
+
       {/* Featured Quote */}
       <section className="container mx-auto max-w-7xl px-4 pb-8">
         <Card className="relative overflow-hidden border-t-4 border-t-primary">

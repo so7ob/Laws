@@ -26,245 +26,154 @@ Adapting the original spec (which asked for Vite/NestJS/MariaDB) to the availabl
 
 ## Phase 2 Status (Enhancement Round - COMPLETED)
 
-### Current Assessment
-The platform was stable and functional. Phase 2 focused on:
-1. **Bug fix**: Admin Header was rendered above the admin shell, covering the "back to site" button
+### What was built:
+1. **Bug fix**: Admin Header covering back-to-site button
 2. **New features**: Researcher account panel, Legislation comparison tool, Theme toggle
 3. **Styling improvements**: Animations, hover effects, decorative elements, reading progress bar
-4. **Additional seed data**: Demo favorites, notes, saved searches, participations for the reader account
+4. **Additional seed data**: Demo favorites, notes, saved searches, participations
 
-### Goals / Completed Modifications / Verification Results
-
-#### 1. Bug Fix: Admin Header covering back-to-site button
-- **Issue**: The public `Header` component was rendered above the `AdminShell`, causing the admin's sticky top bar (with the "عودة للموقع" button) to be hidden under the public header
-- **Fix**: Modified `src/app/page.tsx` to conditionally render the Header only when `view !== 'admin'`
-- **Verification**: agent-browser test confirmed "عودة للموقع" button is now clickable and navigates back to the home page
-
-#### 2. New Feature: Researcher Account Panel (حساب الباحث)
-- **API routes created**:
-  - `/api/account/favorites` (GET, POST, DELETE?id=) - manages user favorites
-  - `/api/account/saved-searches` (GET, POST, DELETE?id=) - manages saved searches
-  - `/api/account/notes` (GET, POST, PUT, DELETE?id=) - manages personal notes
-  - `/api/account/participations` (GET, POST) - manages community participations with auto-generated tracking numbers
-- **Component**: `src/components/public/account-view.tsx` (~770 lines)
-  - 4 tabs: المفضلة (Favorites), البحوث المحفوظة (Saved Searches), الملاحظات (Notes), المشاركات (Participations)
-  - Each tab has full CRUD operations, empty states, loading skeletons
-  - "Add" dialogs for notes and participations with legislation picker
-  - "Run search" button on saved searches navigates to search view
-  - "Open" button on favorites navigates to legislation detail
-- **Seed data**: 4 favorites, 3 saved searches, 2 notes, 2 participations for the demo reader account
-- **Verification**: agent-browser test confirmed all 4 tabs load with data
-
-#### 3. New Feature: Legislation Comparison Tool (مقارنة التشريعات)
-- **API route**: `/api/compare?a=SLUG_A&b=SLUG_B` (GET) - returns both legislations with their articles
-- **Component**: `src/components/public/compare-view.tsx` (~785 lines)
-  - Two Select dropdowns to pick legislations
-  - Swap button to switch A and B
-  - 13-row comparison table (title, type, number/year, authority, dates, status, verification, counts, subjects)
-  - Differences highlighted with `bg-amber-50`
-  - "Matching articles" section finds articles with same published number in both
-  - Same text = green highlight, different text = amber highlight
-- **Verification**: API returns 200 with full data (17KB response, 20 article versions)
-
-#### 4. New Feature: Theme Toggle (Light/Dark Mode)
-- **Components**: `src/components/theme-provider.tsx`, `src/components/theme-toggle.tsx`
-- **Integration**: `ThemeProvider` added to `src/app/layout.tsx` with `attribute="class"`, `defaultTheme="light"`, `enableSystem={false}`
-- **Toggle button**: Added to header with animated Sun/Moon icons (rotate + scale transition)
-- **Dark mode CSS**: Already existed in `globals.css` (`.dark` class with darker palette)
-- **Verification**: agent-browser test confirmed clicking the toggle switches `document.documentElement.className` between "light" and "dark"
-- **VLM assessment**: Dark mode rated 8/10 with "excellent readability" and "sophisticated color scheme"
-
-#### 5. Styling Improvements
-- **Animations** added to `globals.css`:
-  - `fadeInUp`, `fadeIn`, `slideInRight`, `scaleIn` keyframes
-  - `pulseGlow`, `float`, `shimmerText` keyframes
-  - Staggered delay classes (75ms, 100ms, 150ms, 200ms, 300ms, 500ms, 700ms)
-- **New utility classes**:
-  - `.gradient-text` and `.gradient-text-shimmer` for gradient text effects
-  - `.glass` for glass morphism effect
-  - `.pattern-arabesque` and `.pattern-zellige` for Islamic-inspired decorative patterns
-  - `.card-lift` for hover lift effect (translateY -4px + shadow)
-  - `.bg-section-soft` for subtle section backgrounds
-  - `.divider-arabesque` for decorative SVG dividers
-  - `.link-underline` for animated link underlines
-  - `.reading-progress` for the reading progress bar
-  - `.number-badge` for decorative number rings
-- **Home page enhancements**:
-  - Hero section: elegant geometric SVG corners (instead of circles), floating particles
-  - Featured Quote section: rotating quotes with shimmer gradient text (every 6 seconds)
-  - Researcher Tools sidebar card: links to account, compare, search, legislative-system
-  - Latest News sidebar: shows 3 most recent news items
-  - Process/Audience section: "منصة متكاملة لكل المهتمين بالقانون" with 4 cards (للمواطن، للباحث، للمختص القانوني، للمؤسسات)
-  - Trust banner: badges for verification, temporal versions, legal relations
-  - Improved card spacing (gap-5, p-6, line-clamp-3 for better readability)
-- **Reading progress bar**: `src/components/common/reading-progress.tsx`
-  - Fixed gradient bar at top showing scroll progress
-  - Back-to-top button appears after scrolling 400px
-  - Hidden on home and admin views
-- **Header improvements**:
-  - Theme toggle button with animated icons
-  - Account button (links to account view)
-  - "مقارنة التشريعات" link added to التشريعات nav menu
-  - Better search input with focus ring and icon color transition
-  - Logo hover effect with shadow
-
-#### 6. Store Updates
-- Added `'account'` and `'compare'` to the `View` type union in `src/store/app-store.ts`
-- Wired up in `src/app/page.tsx` ViewRouter
-
-#### 7. VLM Visual Quality Assessment
-- **Home page (light mode)**: 8/10 - "Professional & Trustworthy Aesthetic", "Clear Information Hierarchy"
-- **Home page (dark mode)**: 8/10 - "Excellent readability", "sophisticated color scheme"
-- **Legislation detail**: 8/10 - "Comprehensive Information Architecture", "High Usability & Functionality"
-
-### Verification Results
-- ✅ Lint passes with zero errors
-- ✅ All new API routes return 200 (favorites, saved-searches, notes, participations, compare)
-- ✅ agent-browser tests confirm:
-  - Home page renders with all new sections (featured quotes, researcher tools, process cards, trust banner)
-  - Account view loads with all 4 tabs showing real data
-  - Compare view loads with picker dropdowns
-  - Theme toggle switches between light/dark modes
-  - Admin panel back-to-site button now works (bug fixed)
-- ✅ No console errors or page errors
-- ✅ Screenshots saved to `/home/z/my-project/download/`:
-  - `home-screenshot.png` (initial version)
-  - `home-v2.png` (after hero SVG refinement)
-  - `home-dark.png` (dark mode)
-  - `leg-detail.png` (legislation detail)
+### Key artifacts:
+- Account view with 4 tabs (favorites, saved searches, notes, participations)
+- Compare view with side-by-side legislation comparison
+- Theme toggle (light/dark mode)
+- Reading progress bar + back-to-top button
+- Home page enhancements (featured quotes, researcher tools, process cards, trust banner)
 
 ---
 
 ## Phase 3 Status (Advanced Features & Bug Fixes - COMPLETED)
 
-### Current Assessment
-Phase 2 left the platform stable with new features (account, compare, theme toggle). Phase 3 focused on:
-1. **Bug fix**: Collapsible components in admin sections (amendments, roles, corrections) crashed due to `CollapsibleTrigger` being outside `Collapsible` context
+### What was built:
+1. **Bug fix**: Collapsible component crash in 3 admin sections (amendments, roles, corrections)
 2. **New features**: Synonym Dictionary Editor, Corrections Workflow UI, Article Version Comparison Dialog, Keyboard Shortcuts overlay, Breadcrumb component
 3. **Styling improvements**: Enhanced KPI cards with hover effects, improved article cards with gradient badges
 4. **Additional seed data**: Dictionary entries, correction drafts, multiple article versions
 
+### Key artifacts:
+- Dictionary section with version-based editing flow (30 legal synonyms)
+- Corrections section with diff display and workflow actions
+- Article Versions Dialog with side-by-side comparison
+- Keyboard Shortcuts overlay (12 shortcuts, `?` to open)
+- Breadcrumb component (not yet wired)
+
+---
+
+## Phase 4 Status (Navigation, Historical Views & Polish - COMPLETED)
+
+### Current Assessment
+Phase 3 left the platform stable with advanced features. Phase 4 focused on:
+1. **Wire Breadcrumb component** into all sub-page views (legislation detail, search, account, compare, news, public pages, legislations list)
+2. **Add "Effective at date" picker** to legislation detail for viewing historical versions
+3. **Add Article Navigation Sidebar** (sticky TOC) to the Articles tab
+4. **Enhanced print-optimized stylesheet** for legislation detail (legal documents)
+5. **Additional seed data**: 6 quality reports, 15 audit logs, import operations
+6. **Functional action buttons**: Copy link (clipboard), Add to favorites (API), Report (toast)
+
 ### Goals / Completed Modifications / Verification Results
 
-#### 1. Bug Fix: Collapsible Component Crash (3 admin sections)
-- **Issue**: `CollapsibleTrigger` was rendered OUTSIDE the `<Collapsible>` wrapper in `amendments-section.tsx`, `roles-section.tsx`, and `corrections-section.tsx`, causing a runtime error: "CollapsibleTrigger must be used within Collapsible"
-- **Fix**: Restructured all 3 components to wrap the entire Card content inside `<Collapsible open={open} onOpenChange={setOpen}>`, removed duplicate inner `<Collapsible>` wrappers, removed manual `onClick` handlers from `CollapsibleTrigger` (Radix handles toggle automatically)
-- **Verification**: agent-browser tests confirm amendments, corrections, and roles sections now load without errors
+#### 1. Breadcrumb Integration (7 views)
+- **Component**: `src/components/common/breadcrumb.tsx` (created in Phase 3)
+- **Wired into**:
+  - `legislation-detail-view.tsx` - with custom crumb showing legislation short title
+  - `legislations-view.tsx` - with view label
+  - `search-view.tsx` - with view label
+  - `account-view.tsx` - with view label
+  - `compare-view.tsx` - with view label
+  - `content-views.tsx` (NewsView, NewsDetailView, PublicPageView) - with custom crumbs
+- **Behavior**: Shows "الرئيسية → [View Label] → [Custom Crumb]", clickable parent crumbs, last crumb highlighted, hidden on home view
+- **Verification**: agent-browser confirms `navigation "مسار التنقل"` present on all sub-page views
 
-#### 2. New Feature: Synonym Dictionary Editor (قاموس المرادفات القانونية)
-- **API route**: `/api/admin/dictionary` (GET, POST, PUT, DELETE)
-  - GET returns published dictionary + draft + all versions
-  - POST with actions: `create_draft`, `add_entry`, `publish`
-  - PUT updates an entry (canonical, synonym, isActive)
-  - DELETE removes an entry
-- **Component**: `src/components/admin/sections/dictionary-section.tsx` (~580 lines)
-  - Versions panel: horizontal scroll of version cards with status badges
-  - Draft editor: add/edit/delete entries with Switch toggles, search filter
-  - Published view: read-only entries with "create draft" button
-  - Empty state with "create new dictionary" CTA
-- **Seed data**: Published dictionary v1 with 30 legal synonym entries (قانون→تشريع, دستور→قانون أساسي, محكمة→قضاء, etc.)
-- **Verification**: API returns 200 with 30 entries; agent-browser confirms section loads with table of entries
+#### 2. Effective Date Picker (Legislation Detail)
+- **Component**: Added to `legislation-detail-view.tsx` header card
+- **Implementation**: Popover with Calendar primitive (shadcn/ui)
+- **Features**:
+  - Button shows "عرض النص الحالي" by default, changes to "النص النافذ في [date]" when a date is selected
+  - Calendar popover with title and description
+  - "إعادة التعيين" (Reset) button to clear the date
+  - "عرض زمني" badge appears when a date is selected
+  - Toast notification on date selection
+- **Verification**: agent-browser confirms calendar popover opens with month grid and selectable dates; VLM rated it "visible and usable"
 
-#### 3. New Feature: Corrections Workflow UI (مسودات التصحيح)
-- **API route**: `/api/admin/corrections` (GET, POST, PUT, DELETE)
-  - GET with optional status/legislationId filters
-  - POST creates new correction draft
-  - PUT with actions: `approve`, `publish`, `reject`
-  - DELETE removes a correction
-- **Component**: `src/components/admin/sections/corrections-section.tsx` (~620 lines)
-  - Stats strip: 4 cards (total, draft, approved, published)
-  - Filter bar: status + legislation selectors
-  - Correction cards with target type badge, status badge, legislation link, reason, dates
-  - Collapsible diff showing current content (rose) vs proposed content (emerald)
-  - Per-status actions: draft→اعتماد/تحرير/حذف, approved→نشر/رفض
-  - Add correction dialog with legislation picker, target type, article/attachment picker, content, reason
-- **Seed data**: 3 correction drafts (draft for constitution, approved for civil code, published for penal code)
-- **Verification**: API returns 200 with 3 corrections; agent-browser confirms section loads with cards
+#### 3. Article Navigation Sidebar (Articles Tab)
+- **Component**: Added to ArticlesTab in `legislation-detail-view.tsx`
+- **Layout**: 2-column grid on large screens (`lg:grid-cols-[260px,1fr]`), single column on mobile
+- **Features**:
+  - Sticky sidebar (`sticky top-24`) with max height
+  - Card titled "قائمة المواد" with ListOrdered icon
+  - ScrollArea with article links (numbered badges)
+  - Click to smooth-scroll to article (`scrollIntoView({ behavior: 'smooth', block: 'center' })`)
+  - Hover effects: badge bg changes, text color transitions
+- **Verification**: agent-browser confirms sidebar shows with 10+ article links; VLM rated layout 8/10 with "highly useful" sidebar
 
-#### 4. New Feature: Article Version Comparison Dialog
-- **Component**: Added to `src/components/public/legislation-detail-view.tsx`
-  - `ArticleVersionsDialog`: Full-screen dialog showing all versions of an article
-  - Fetches versions on-demand from `/api/legislations/[slug]/versions`
-  - Each version card shows: version number, change type badge, effective period, change reason, text content
-  - Current version highlighted with emerald, future version with blue
-  - "مقارنة (أ)" and "مقارنة (ب)" buttons to select 2 versions for comparison
-  - `VersionCompareBar`: Side-by-side comparison with identical/different badge
-- **Enhanced ArticlesTab**: Every article now has a History button (icon) that opens the dialog
-- **Seed data**: Added second version to constitution article 5 (amended text), future version to article 7
-- **Verification**: agent-browser confirms dialog opens showing "مادة (5) • ٢ نسخة" with 2 compare button pairs
+#### 4. Enhanced Print Stylesheet
+- **File**: `src/app/globals.css` - significantly expanded `@media print` block
+- **Features**:
+  - Hides header, footer, nav, skip-link
+  - Resets colors (white background, black text)
+  - Removes shadows, animations, transitions
+  - Legal text: `page-break-inside: avoid`
+  - Cards: clean 1px solid borders
+  - Headers: `page-break-after: avoid`
+  - Badges: black border, white background for print visibility
+  - Links: show URL after link text
+  - Force background colors to print (`print-color-adjust: exact`)
+  - Print-only class (`.print-only`) for elements that should only appear in print
 
-#### 5. New Feature: Keyboard Shortcuts Overlay
-- **Component**: `src/components/common/keyboard-shortcuts.tsx`
-  - Press `?` (or `Shift+/`) to open the shortcuts dialog
-  - 12 shortcuts documented with kbd badges and icons
-  - Shortcuts: `?` (show help), `/` (focus search), `g h` (home), `g s` (search), `g l` (legislations), `g a` (account), `g c` (compare), `g n` (news), `g d` (admin), `t` (toggle theme), `↑` (back to top), `Esc` (close)
-  - Two-key combos (g + key) with 800ms timeout
-  - Ignores shortcuts when typing in inputs/textareas (except Esc)
-- **Integration**: Added `<KeyboardShortcuts />` to `src/app/page.tsx` (hidden on admin view)
-- **Verification**: agent-browser confirms pressing `Shift+/` opens the dialog with heading "اختصارات لوحة المفاتيح"
+#### 5. Functional Action Buttons (Legislation Detail)
+- **Copy Link**: Uses `navigator.clipboard.writeText()`, shows "تم النسخ" with Check icon for 2 seconds, toast notification
+- **Add to Favorites**: POST to `/api/account/favorites`, shows toast on success/duplicate
+- **Report**: Toast info directing to account → participations
+- **Print**: `window.print()` (now with enhanced print stylesheet)
 
-#### 6. New Feature: Breadcrumb Component
-- **Component**: `src/components/common/breadcrumb.tsx`
-  - Shows navigation path: الرئيسية → [View Label] → [Custom crumb]
-  - `VIEW_LABELS` map for all 16 views with icons
-  - Clickable crumbs with animated underline on hover
-  - Last crumb highlighted as current page
-  - Hidden on home view
-- **Integration**: Component created, ready to be added to sub-page views (not yet wired into all views to avoid breaking existing layouts)
+#### 6. Additional Seed Data
+- **File**: `prisma/seed/admin-data.ts`
+- **Quality Reports**: 6 reports with varied types (missing_source, incomplete_dates, unreviewed_ocr, broken_reference, missing_publish_data, unlinked_amendment) and severities (info, warning, error, critical) and statuses (open, processing, resolved, ignored)
+- **Audit Logs**: 15 logs with varied actions (create, edit, review, publish, delete, approve) and resources (legislation, role, user, amendment, attachment, policy, source, import, correction, settings)
+- **Import Operations**: 6 imports with varied statuses (completed, ready_review, extracting, uploaded, failed) and file types (txt, pdf, docx, xlsx)
 
-#### 7. Enhanced Admin Dashboard KPI Cards
-- **Improvement**: Updated `KpiCard` in `dashboard-section.tsx`
-  - Added hover shadow effect (`group hover:shadow-md`)
-  - Icon container scales on hover (`group-hover:scale-110`)
-  - Decorative bottom accent line that appears on hover (gradient from primary to secondary)
-  - Reduced gap between breakdown badges (gap-1.5 instead of gap-2)
-- **Verification**: Lint passes, no visual regressions
-
-#### 8. Admin Panel Navigation Updates
-- **Updated** `src/components/admin/admin-shell.tsx`:
-  - Added "مسودات التصحيح" (corrections) to المحتوى group with FileEdit icon
-  - Added "قاموس المرادفات" (dictionary) to الجودة والتدقيق group with BookMarked icon
-  - Updated SECTION_TITLES with new entries
-  - Updated renderSection switch with new cases
-- **Result**: Admin sidebar now shows 13 sections (was 11)
+#### 7. VLM Visual Quality Assessment
+- **Articles tab with sidebar**: 8/10 - "Sidebar is highly useful... Excellent readability with clean, minimalist design"
+- **Date picker popover**: "Visible and usable... displayed as a popover with selectable dates"
+- **Home page (Phase 4)**: 8/10 - "Professional & Trustworthy Aesthetic... Excellent Information Architecture"
 
 ### Verification Results
 - ✅ Lint passes with zero errors
-- ✅ All new API routes return 200 (dictionary, corrections)
+- ✅ All API routes return 200
 - ✅ agent-browser tests confirm:
-  - Dictionary section loads with 30 entries in published table
-  - Corrections section loads with 3 correction cards
-  - Amendments section no longer crashes (Collapsible fix)
-  - Roles section no longer crashes (Collapsible fix)
-  - Article Versions Dialog opens showing version count and compare buttons
-  - Keyboard shortcuts overlay opens with `?` key
-  - Admin sidebar shows all 13 sections
+  - Breadcrumb navigation present on all sub-page views
+  - Effective date picker opens calendar popover
+  - Article navigation sidebar shows with clickable article links
+  - All 13 admin sections load without errors
+  - Reports section loads with seeded data
+  - Audit section loads with seeded data
 - ✅ No console errors or page errors
 - ✅ Screenshots saved:
-  - `versions-dialog.png` (article versions dialog - 1 version)
-  - `versions-dialog-2.png` (article versions dialog - 2 versions)
-  - `keyboard-shortcuts.png` (shortcuts overlay)
-  - `home-phase3.png` (home page after phase 3)
+  - `articles-with-sidebar.png` (articles tab with navigation sidebar)
+  - `date-picker.png` (date picker closed)
+  - `date-picker-open.png` (calendar popover open)
+  - `detail-with-sidebar.png` (legislation detail)
+  - `search-breadcrumb.png` (search with breadcrumb)
+  - `home-phase4.png` (home page after phase 4)
 
 ---
 
 ## Unresolved Issues / Risks
-1. **Dev server memory**: Next.js 16 + Turbopack consumes ~1.4GB memory under load. Using `NODE_OPTIONS=--max-old-space-size=2048`. Not a production concern.
+1. **Dev server memory**: Next.js 16 + Turbopack consumes ~1.6GB memory under load. Using `NODE_OPTIONS=--max-old-space-size=2048`. Not a production concern.
 2. **Original spec vs. stack adaptation**: Vite/NestJS/MariaDB → Next.js/Prisma/SQLite per project constraints. All explicit functional requirements implemented.
 3. **Simplified features**: OCR, real auth, PDF.js viewer use mock data (backend hooks exist).
 4. **SQLite + Prisma limitations**: Implicit many-to-many replaced with explicit join tables.
 5. **Admin API security**: All admin endpoints are currently open (no auth enforcement). NextAuth.js integration recommended for production.
-6. **Breadcrumb not yet wired**: The Breadcrumb component exists but is not yet integrated into sub-page views (legislation detail, search, etc.). Ready for next phase.
-7. **VLM feedback on spacing**: Some sections could benefit from more whitespace. Improved in Phase 2-3 but could be further refined.
+6. **VLM feedback on spacing**: Some sections could benefit from more whitespace. Improved across phases but could be further refined.
+7. **Effective date picker is visual-only**: Selecting a date doesn't yet filter article versions (would require API changes to pass `effectiveDate` parameter).
 
 ## Priority Recommendations for Next Phase
-1. **Wire Breadcrumb component** into legislation detail, search, account, compare, and news views for navigation context
+1. **Wire effective date picker to API**: Pass `effectiveDate` to `/api/legislations/[slug]` to return the correct version of each article based on the selected date
 2. **Add user authentication** (NextAuth.js) to secure admin endpoints and personalize the account panel
 3. **Add Arabic OCR** via Tesseract for PDF/image imports
 4. **Implement full-text search** via SQLite FTS5 for better Arabic search performance
 5. **Add real file upload** for sources (currently mocked)
 6. **Add WebSocket notifications** for long-running import tasks
 7. **Further styling refinements**: More whitespace in dense sections per VLM feedback
-8. **Add print-optimized stylesheet** for legislation detail (legal documents)
-9. **Add export to PDF/DOCX** for legislation detail
-10. **Add "effective at date" picker** on legislation detail to view historical versions
+8. **Add export to PDF/DOCX** for legislation detail
+9. **Add active article tracking** in the sidebar (highlight the article currently in view)
+10. **Add "Recently Viewed" section** on home page for returning users

@@ -461,10 +461,79 @@
 
 /* Print improvements */
 @media print {
+  /* Hide non-printable elements */
   .no-print { display: none !important; }
-  body { font-size: 12pt; line-height: 1.8; }
-  .legal-text { page-break-inside: avoid; }
+  header, footer, nav, .skip-link { display: none !important; }
+
+  /* Reset colors for print */
+  body {
+    font-size: 12pt;
+    line-height: 1.8;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove shadows, borders, animations */
   .card-lift:hover { transform: none; box-shadow: none; }
+  * {
+    box-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Legal text: avoid breaking inside articles */
+  .legal-text { page-break-inside: avoid; }
+
+  /* Cards: clean borders for print */
+  .border, [class*="border-"] {
+    border: 1px solid #999 !important;
+  }
+
+  /* Headers: page break after */
+  h1, h2, h3 { page-break-after: avoid; }
+
+  /* Print header */
+  .print-header {
+    display: block !important;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+
+  /* Articles: each article on new page if needed */
+  article, .article-card {
+    page-break-inside: avoid;
+    margin-bottom: 0.5cm;
+  }
+
+  /* Colors: ensure badges print with borders */
+  .badge, [class*="Badge"] {
+    border: 1px solid #000 !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Links: show URL */
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #555;
+  }
+  a[href^="#"]:after { content: ""; }
+
+  /* Force backgrounds to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* Print-only header (hidden on screen, shown on print) */
+.print-only {
+  display: none;
+}
+@media print {
+  .print-only { display: block; }
 }
 
 /* Skeleton improvements */

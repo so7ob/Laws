@@ -36,6 +36,7 @@ import {
   LayoutGrid,
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, VERIFICATION_LABELS, formatDateShort } from '@/lib/constants'
+import { Breadcrumb } from '@/components/common/breadcrumb'
 
 interface ListResponse {
   items: any[]
@@ -114,6 +115,7 @@ export function LegislationsView({ preset }: { preset?: 'recent' | 'popular' | '
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
+      <Breadcrumb />
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-secondary mb-2 flex items-center gap-3">

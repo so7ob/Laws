@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params
+    const { searchParams } = new URL(request.url)
+    const effectiveDateParam = searchParams.get('effectiveDate')
+
+    // If effectiveDate is provided, we need to find the version that was active on that date
+    const effectiveDate = effectiveDateParam ? new Date(effectiveDateParam) : null
+
     const leg = await db.legislation.findUnique({
       where: { slug },
       include: {
@@ -30,19 +36,44 @@ export async function GET(
             sortOrder: true,
             isDuplicate: true,
             duplicateLabel: true,
-            versions: {
-              where: { isCurrent: true },
-              select: {
-                id: true,
-                versionNo: true,
-                textContent: true,
-                effectiveFrom: true,
-                effectiveTo: true,
-                changeType: true,
-                changeReason: true,
-              },
-              take: 1,
-            },
+            versions: effectiveDate
+              ? {
+                  // Find the version active on the effective date
+                  where: {
+                    effectiveFrom: { lte: effectiveDate },
+                    AND: [
+                      {
+                        OR: [
+                          { effectiveTo: null },
+                          { effectiveTo: { gt: effectiveDate } },
+                        ],
+                      },
+                    ],
+                  },
+                  select: {
+                    id: true,
+                    versionNo: true,
+                    textContent: true,
+                    effectiveFrom: true,
+                    effectiveTo: true,
+                    changeType: true,
+                    changeReason: true,
+                  },
+                  take: 1,
+                }
+              : {
+                  where: { isCurrent: true },
+                  select: {
+                    id: true,
+                    versionNo: true,
+                    textContent: true,
+                    effectiveFrom: true,
+                    effectiveTo: true,
+                    changeType: true,
+                    changeReason: true,
+                  },
+                  take: 1,
+                },
           },
         },
         attachments: {
@@ -82,6 +113,9 @@ export async function GET(
       amendmentCount: leg._count.amendmentsFor,
       relationCount: leg._count.relations + leg._count.reverseRelations,
       _count: undefined,
+      // Indicate if we're viewing a historical version
+      isHistoricalView: !!effectiveDate,
+      effectiveDate: effectiveDate?.toISOString() || null,
     })
   } catch (e: any) {
     console.error('legislation detail error:', e)

@@ -67,6 +67,7 @@ import {
   relativeTime,
   truncate,
 } from '@/lib/constants'
+import { Breadcrumb } from '@/components/common/breadcrumb'
 
 /* ============================================================
  * Types
@@ -156,6 +157,7 @@ export function AccountView() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumb />
         {/* Page header */}
         <header className="mb-8">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

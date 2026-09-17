@@ -17,6 +17,13 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Calendar as CalendarPrimitive } from '@/components/ui/calendar'
+import { Breadcrumb } from '@/components/common/breadcrumb'
+import {
   ArrowRight,
   BookOpen,
   FileText,
@@ -42,6 +49,10 @@ import {
   Clock,
   X,
   Maximize2,
+  CalendarClock,
+  ListOrdered,
+  Copy,
+  Check,
 } from 'lucide-react'
 import {
   LEGAL_STATUS_LABELS,
@@ -54,6 +65,7 @@ import {
   CHANGE_TYPE_LABELS,
   highlight,
 } from '@/lib/constants'
+import { toast } from 'sonner'
 
 interface LegislationDetail {
   id: string
@@ -102,23 +114,80 @@ export function LegislationDetailView() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [articleSearch, setArticleSearch] = useState('')
+  const [effectiveDate, setEffectiveDate] = useState<Date | null>(null)
+  const [datePickerOpen, setDatePickerOpen] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
+  const [activeArticleId, setActiveArticleId] = useState<string | null>(null)
+  const [recentlyViewed, setRecentlyViewed] = useState<any[]>([])
 
   useEffect(() => {
     if (!slug) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
-    fetch(`/api/legislations/${slug}`)
+    const params = effectiveDate ? `?effectiveDate=${effectiveDate.toISOString()}` : ''
+    fetch(`/api/legislations/${slug}${params}`)
       .then((r) => r.json())
       .then((d) => {
         setData(d)
         setLoading(false)
+        // Track recently viewed in localStorage
+        if (d && typeof window !== 'undefined') {
+          try {
+            const stored = localStorage.getItem('recentlyViewed')
+            const list = stored ? JSON.parse(stored) : []
+            const filtered = list.filter((item: any) => item.slug !== d.slug)
+            const newItem = {
+              slug: d.slug,
+              title: d.shortTitle || d.officialTitle,
+              type: d.type?.nameAr,
+              year: d.year,
+              viewedAt: new Date().toISOString(),
+            }
+            const updated = [newItem, ...filtered].slice(0, 6)
+            localStorage.setItem('recentlyViewed', JSON.stringify(updated))
+          } catch {}
+        }
       })
       .catch(() => setLoading(false))
-  }, [slug])
+  }, [slug, effectiveDate])
+
+  function handleCopyLink() {
+    if (typeof window === 'undefined') return
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setLinkCopied(true)
+      toast.success('تم نسخ الرابط')
+      setTimeout(() => setLinkCopied(false), 2000)
+    }).catch(() => toast.error('تعذر نسخ الرابط'))
+  }
+
+  function handleFavorite() {
+    if (!slug || !data) return
+    fetch('/api/account/favorites', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ legislationId: data.id }),
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.alreadyExists) {
+          toast.info('التشريع موجود في المفضلة مسبقًا')
+        } else {
+          toast.success('تمت الإضافة إلى المفضلة')
+        }
+      })
+      .catch(() => toast.error('تعذرت الإضافة للمفضلة'))
+  }
+
+  function handleReport() {
+    toast.info('سيتم توجيهك لنموذج الإبلاغ', {
+      description: 'يمكنك الإبلاغ عن مشكلة في المحتوى من حساب الباحث → المشاركات',
+    })
+  }
 
   if (loading) {
     return (
       <div className="container mx-auto max-w-7xl px-4 py-8 space-y-4">
+        <Skeleton className="h-6 w-1/2" />
         <Skeleton className="h-12 w-2/3" />
         <Skeleton className="h-6 w-1/2" />
         <Skeleton className="h-64 rounded-xl" />
@@ -140,27 +209,26 @@ export function LegislationDetailView() {
 
   const status = LEGAL_STATUS_LABELS[data.legalStatus] || LEGAL_STATUS_LABELS.active
   const verification = VERIFICATION_LABELS[data.verificationLevel] || VERIFICATION_LABELS.unverified
+  const effectiveDateLabel = effectiveDate
+    ? `النص النافذ في ${formatDate(effectiveDate)}`
+    : 'عرض النص الحالي'
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-        <button onClick={() => navigate('home')} className="hover:text-primary">
-          الرئيسية
-        </button>
-        <ChevronLeft className="h-3 w-3" />
-        <button onClick={() => navigate('legislations')} className="hover:text-primary">
-          التشريعات
-        </button>
-        <ChevronLeft className="h-3 w-3" />
-        <span className="text-foreground truncate">{data.shortTitle}</span>
-      </div>
+      <Breadcrumb
+        customCrumbs={[
+          { label: data.shortTitle || data.officialTitle, icon: Scale },
+        ]}
+      />
 
       {/* Header card */}
-      <Card className="mb-6 border-t-4 border-t-primary overflow-hidden">
-        <CardContent className="p-6">
+      <Card className="mb-6 border-t-4 border-t-primary overflow-hidden relative">
+        {/* Decorative background pattern */}
+        <div className="absolute inset-0 pattern-arabesque opacity-[0.03] pointer-events-none" />
+        <CardContent className="p-6 relative">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2 mb-3">
                 <Badge className="bg-primary/10 text-primary border-primary/30 hover:bg-primary/15">
                   {data.type?.nameAr}
@@ -174,7 +242,7 @@ export function LegislationDetailView() {
                   </Badge>
                 )}
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-secondary mb-3 leading-tight">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-secondary mb-3 leading-tight">
                 {data.officialTitle}
               </h1>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
@@ -183,24 +251,68 @@ export function LegislationDetailView() {
                 <InfoBox icon={Calendar} label="تاريخ الإصدار" value={formatDate(data.issueDate)} />
                 <InfoBox icon={CheckCircle2} label="تاريخ النفاذ" value={formatDate(data.effectiveDate)} />
               </div>
+              {/* Effective date picker */}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 text-xs">
+                      <CalendarClock className="h-3.5 w-3.5 ml-1.5" />
+                      {effectiveDateLabel}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <div className="p-3 border-b">
+                      <div className="text-sm font-semibold mb-1">عرض النص النافذ في تاريخ</div>
+                      <div className="text-xs text-muted-foreground">اختر تاريخًا لعرض النسخة المناسبة</div>
+                    </div>
+                    <CalendarPrimitive
+                      mode="single"
+                      selected={effectiveDate || undefined}
+                      onSelect={(d) => {
+                        setEffectiveDate(d || null)
+                        setDatePickerOpen(false)
+                        if (d) toast.success(`عرض النص النافذ في ${formatDate(d)}`)
+                      }}
+                      initialFocus
+                    />
+                    {effectiveDate && (
+                      <div className="p-2 border-t flex justify-between gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => { setEffectiveDate(null); setDatePickerOpen(false) }}
+                        >
+                          إعادة التعيين
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+                {effectiveDate && (
+                  <Badge variant="outline" className="text-blue-700 bg-blue-50 border-blue-200">
+                    <Clock className="h-3 w-3 ml-1" />
+                    عرض زمني
+                  </Badge>
+                )}
+              </div>
             </div>
             {/* Action tools */}
-            <div className="flex flex-col gap-2 min-w-[140px]">
-              <Button variant="outline" size="sm" onClick={() => window.print()} className="no-print">
+            <div className="flex lg:flex-col gap-2 lg:min-w-[140px] no-print">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
                 <Printer className="h-4 w-4 ml-1.5" />
-                طباعة
+                <span className="hidden sm:inline">طباعة</span>
               </Button>
-              <Button variant="outline" size="sm" className="no-print">
-                <Share2 className="h-4 w-4 ml-1.5" />
-                نسخ الرابط
+              <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                {linkCopied ? <Check className="h-4 w-4 ml-1.5 text-emerald-600" /> : <Copy className="h-4 w-4 ml-1.5" />}
+                <span className="hidden sm:inline">{linkCopied ? 'تم النسخ' : 'نسخ الرابط'}</span>
               </Button>
-              <Button variant="outline" size="sm" className="no-print">
+              <Button variant="outline" size="sm" onClick={handleFavorite}>
                 <Star className="h-4 w-4 ml-1.5" />
-                أضف للمفضلة
+                <span className="hidden sm:inline">أضف للمفضلة</span>
               </Button>
-              <Button variant="outline" size="sm" className="no-print">
+              <Button variant="outline" size="sm" onClick={handleReport}>
                 <Flag className="h-4 w-4 ml-1.5" />
-                إبلاغ
+                <span className="hidden sm:inline">إبلاغ</span>
               </Button>
             </div>
           </div>
@@ -427,6 +539,8 @@ function OverviewTab({ data }: { data: LegislationDetail }) {
 
 function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: LegislationDetail; articleSearch: string; setArticleSearch: (s: string) => void }) {
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
+  const [activeArticleId, setActiveArticleId] = useState<string | null>(null)
+
   const filtered = articleSearch.trim()
     ? data.articles.filter((a) => {
         const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
@@ -437,17 +551,105 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
 
   const selectedArticle = data.articles.find((a) => a.id === selectedArticleId)
 
+  // IntersectionObserver to track which article is in view
+  useEffect(() => {
+    if (filtered.length === 0) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the entry closest to the top that's intersecting
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+        if (visible.length > 0) {
+          const id = visible[0].target.id.replace('article-', '')
+          setActiveArticleId(id)
+        }
+      },
+      { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
+    )
+    // Observe all article cards
+    filtered.forEach((a) => {
+      const el = document.getElementById(`article-${a.id}`)
+      if (el) observer.observe(el)
+    })
+    return () => observer.disconnect()
+  }, [filtered])
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-xl">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            value={articleSearch}
-            onChange={(e) => setArticleSearch(e.target.value)}
-            placeholder="ابحث داخل المواد..."
-            className="pr-10"
+    <div className="grid grid-cols-1 lg:grid-cols-[260px,1fr] gap-6">
+      {/* Article Navigation Sidebar - sticky */}
+      <div className="hidden lg:block">
+        <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-hidden">
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <ListOrdered className="h-4 w-4 text-primary" />
+                قائمة المواد
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[calc(100vh-12rem)]">
+                <div className="px-2 pb-2 space-y-0.5">
+                  {data.articles.map((a, idx) => {
+                    const isActive = activeArticleId === a.id
+                    return (
+                      <a
+                        key={a.id}
+                        href={`#article-${a.id}`}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          document.getElementById(`article-${a.id}`)?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                          })
+                        }}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all text-right group ${
+                          isActive
+                            ? 'bg-primary/10 text-primary font-semibold'
+                            : 'hover:bg-accent text-muted-foreground'
+                        }`}
+                      >
+                        <span className={`shrink-0 h-6 w-6 rounded flex items-center justify-center text-[10px] font-semibold transition-colors article-number ${
+                          isActive
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                        }`}>
+                          {a.publishedNumber || (idx + 1)}
+                        </span>
+                        <span className={`truncate transition-colors ${
+                          isActive ? 'text-primary' : 'group-hover:text-foreground'
+                        }`}>
+                          مادة ({a.publishedNumber})
+                        </span>
+                        {isActive && (
+                          <span className="mr-auto h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        )}
+                      </a>
+                    )
+                  })}
+                  {data.articles.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-4">
+                      لا توجد مواد
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Articles content */}
+      <div className="space-y-4 min-w-0">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="relative flex-1 max-w-xl">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              value={articleSearch}
+              onChange={(e) => setArticleSearch(e.target.value)}
+              placeholder="ابحث داخل المواد..."
+              className="pr-10"
           />
         </div>
         <div className="text-sm text-muted-foreground shrink-0">
@@ -528,6 +730,7 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
 
       {selectedArticle && (
