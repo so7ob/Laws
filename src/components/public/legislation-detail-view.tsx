@@ -68,6 +68,7 @@ import {
 import { diffTexts, mergeSegments, getDiffStats } from '@/lib/diff'
 import { toast } from 'sonner'
 import { LegislationFeedback } from '@/components/public/legislation-feedback'
+import { ShareDialog } from '@/components/public/share-dialog'
 
 interface LegislationDetail {
   id: string
@@ -317,10 +318,7 @@ export function LegislationDetailView() {
                 <Printer className="h-4 w-4 ml-1.5" />
                 <span className="hidden sm:inline">طباعة</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handleCopyLink}>
-                {linkCopied ? <Check className="h-4 w-4 ml-1.5 text-emerald-600" /> : <Copy className="h-4 w-4 ml-1.5" />}
-                <span className="hidden sm:inline">{linkCopied ? 'تم النسخ' : 'نسخ الرابط'}</span>
-              </Button>
+              <ShareDialog legislationTitle={data.officialTitle} />
               <Button variant="outline" size="sm" onClick={handleFavorite}>
                 <Star className="h-4 w-4 ml-1.5" />
                 <span className="hidden sm:inline">أضف للمفضلة</span>
@@ -336,11 +334,12 @@ export function LegislationDetailView() {
       </Card>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         <QuickStat icon={FileText} label="عدد المواد" value={data.articleCount} />
         <QuickStat icon={LayoutGrid} label="الملاحق" value={data.attachmentCount} />
         <QuickStat icon={History} label="التعديلات" value={data.amendmentCount} />
         <QuickStat icon={Network} label="العلاقات" value={data.relationCount} />
+        <ReadingTimeStat articles={data.articles} preamble={data.preamble} />
       </div>
 
       {/* Tabs */}
@@ -428,6 +427,36 @@ function QuickStat({ icon: Icon, label, value }: { icon: any; label: string; val
             {value.toLocaleString('ar-EG')}
           </div>
           <div className="text-xs text-muted-foreground">{label}</div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ReadingTimeStat({ articles, preamble }: { articles: any[]; preamble: string | null }) {
+  // Estimate reading time: ~200 words per minute for Arabic
+  const totalText = [
+    preamble || '',
+    ...articles.map((a) => {
+      const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
+      return v?.textContent || ''
+    }),
+  ].join(' ')
+  const wordCount = totalText.split(/\s+/).filter(Boolean).length
+  const minutes = Math.max(1, Math.ceil(wordCount / 200))
+
+  return (
+    <Card className="border-border/60 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Clock className="h-5 w-5 text-primary" />
+        </div>
+        <div>
+          <div className="text-xl font-bold text-secondary article-number">
+            {minutes.toLocaleString('ar-EG')}
+            <span className="text-xs font-normal mr-1">دقيقة</span>
+          </div>
+          <div className="text-xs text-muted-foreground">وقت القراءة</div>
         </div>
       </CardContent>
     </Card>
@@ -728,6 +757,21 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="إضافة للمفضلة">
                       <Star className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="نسخ نص المادة"
+                      onClick={() => {
+                        if (typeof navigator !== 'undefined' && v?.textContent) {
+                          navigator.clipboard.writeText(v.textContent).then(() => {
+                            toast.success('تم نسخ نص المادة')
+                          }).catch(() => toast.error('تعذر النسخ'))
+                        }
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="نسخ الرابط">
                       <Hash className="h-4 w-4" />

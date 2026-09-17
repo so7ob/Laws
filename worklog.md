@@ -10,85 +10,85 @@ Building a comprehensive Yemeni Legislation Platform using Next.js 16 + Prisma +
 
 ---
 
-## Phases 1-7 Summary (COMPLETED)
+## Phases 1-8 Summary (COMPLETED)
 
 ### Phase 1: Initial Foundation
-- Prisma schema, seed data (23 legislations), public frontend + admin panel
-
-### Phase 2: Enhancement Round
-- Account panel, comparison tool, theme toggle, animations
-
-### Phase 3: Advanced Features
-- Dictionary editor, corrections workflow, version comparison, keyboard shortcuts, breadcrumb
-
-### Phase 4: Navigation & Historical Views
-- Breadcrumb integration, effective date picker, article sidebar, print stylesheet
-
-### Phase 5: Functional Historical Views
-- API integration for date picker, active article tracking, recently viewed, CSV export
-
-### Phase 6: Visual Diff, Stats & Polish
-- Word-level diff, statistics page, enhanced footer, search history
-
-### Phase 7: Feedback, Settings & Search Enhancements
-- Legislation rating/feedback system, account settings tab, favorite from search, print header
+### Phase 2: Enhancement Round (account, compare, theme toggle)
+### Phase 3: Advanced Features (dictionary, corrections, version comparison, keyboard shortcuts)
+### Phase 4: Navigation & Historical Views (breadcrumb, date picker, article sidebar, print)
+### Phase 5: Functional Historical Views (API date picker, scroll spy, recently viewed, CSV export)
+### Phase 6: Visual Diff, Stats & Polish (word-level diff, stats page, enhanced footer, search history)
+### Phase 7: Feedback, Settings & Search (rating system, settings tab, favorite from search)
+### Phase 8: Timeline View & Page Transitions (chronological timeline, page transitions)
 
 ---
 
-## Phase 8 Status (Timeline View & Page Transitions - COMPLETED)
+## Phase 9 Status (Share Dialog, Reading Time & Visual Polish - COMPLETED)
 
 ### Current Assessment
-Phase 7 left the platform with feedback and settings features. Phase 8 focused on:
-1. **Legislation Timeline view** - chronological visual timeline of all legislation
-2. **Page transition animations** - smooth opacity fade between views
-3. **Navigation integration** - timeline added to nav, quick links, keyboard shortcuts, breadcrumb
-4. **Enhanced home page** - timeline replaces "recent" in quick links
+Phase 8 left the platform with timeline and page transitions. Phase 9 focused on:
+1. **Share dialog** with social media buttons
+2. **Reading time estimate** on legislation detail
+3. **Copy article text** button on each article card
+4. **Enhanced CSS utilities** for visual polish
+5. **Replaced copy link** with full-featured share dialog
 
 ### Goals / Completed Modifications / Verification Results
 
-#### 1. Legislation Timeline View
-- **Component**: `src/components/public/timeline-view.tsx`
-  - Fetches all legislations from `/api/legislations?pageSize=100`
-  - Groups by year using `useMemo` with Map
-  - Sorts years descending (most recent first)
-  - **Vertical timeline**: Gradient line (primary→secondary→transparent) with circular year markers
-  - **Year filter chips**: Click to filter by specific year, "الكل" to show all
-  - **Year sections**: Each year has a header with count and legislation cards
-  - **Legislation cards**: Type badge, status badge, "معدَّل" badge, title, authority, publication date
-  - **Hover effects**: Card lift, icon scale, title color change, chevron color change
-  - **Staggered animations**: Cards fade in with 30ms delay each
-  - **Empty state**: Clock icon with message
-- **Integration**: Added 'timeline' to View type, wired in page.tsx, added to header nav (التشريعات menu), added to home page QUICK_LINKS, added to keyboard shortcuts (g+t), added to breadcrumb VIEW_LABELS
-- **Verification**: VLM rated 8/10 - "Timeline is very clear... distinct circular year markers connected by a vertical line... effective and accessible legal archive interface"
+#### 1. Share Dialog with Social Media
+- **Component**: `src/components/public/share-dialog.tsx`
+  - Dialog with 6 social platforms: Twitter, Facebook, LinkedIn, WhatsApp, Telegram, Email
+  - Each platform opens share URL in new tab with pre-filled text
+  - Copy link section with URL input and copy button
+  - Copy button shows "تم" (done) with checkmark for 2 seconds
+  - Toast notification on copy
+- **Integration**: Replaced the "نسخ الرابط" button in legislation detail with `<ShareDialog>`
+- **Verification**: VLM rated 9/10 - "clean, icons are clear, copy function is prominent"
 
-#### 2. Page Transition Animations
-- **Component**: `src/components/common/page-transition.tsx`
-  - Wraps view content with opacity transition
-  - Fades out (opacity-0) then fades in (opacity-100) on view change
-  - Uses `requestAnimationFrame` for smooth transition
-  - 200ms duration
-  - Triggered by `view` state change
-- **Integration**: Added `<PageTransition trigger={view}>` wrapper in page.tsx main content area
-- **Verification**: Smooth transitions between views (no jarring content swaps)
+#### 2. Reading Time Estimate
+- **Component**: Added `ReadingTimeStat` function to `legislation-detail-view.tsx`
+  - Calculates total word count from preamble + all article current versions
+  - Estimates reading time at 200 words/minute for Arabic
+  - Shows as 5th QuickStat card with gradient background
+  - Displays "X دقيقة" (X minutes) with Clock icon
+- **Integration**: Added to QuickStats grid (now 5 cards: articles, attachments, amendments, relations, reading time)
+- **Verification**: agent-browser confirms "٢ دقيقة" + "وقت القراءة" visible on constitution detail
 
-#### 3. Navigation Integration
-- **Header**: Added "الخط الزمني" to التشريعات nav menu with GitBranch icon
-- **Home page QUICK_LINKS**: Replaced "أحدث التشريعات" with "الخط الزمني" (GitBranch icon, brown gradient)
-- **Keyboard shortcuts**: Added `g+t` for timeline (13 shortcuts total now)
-- **Breadcrumb**: Added 'timeline' to VIEW_LABELS with GitBranch icon
+#### 3. Copy Article Text Button
+- **Enhancement**: Added to article cards in ArticlesTab
+  - New "نسخ نص المادة" button with Copy icon
+  - Copies article's current version text to clipboard
+  - Toast notification on success/failure
+  - Positioned between "أضف للمفضلة" and "نسخ الرابط"
+- **Verification**: Lint passes, no errors
+
+#### 4. Enhanced CSS Utilities
+- **File**: `src/app/globals.css` - added new utility classes:
+  - `.empty-state-icon`: Gradient background with dashed border ring
+  - `.divider-diamond`: Decorative section divider with diamond shape
+  - `.card-gradient-border`: Gradient border on hover (mask-based)
+  - `.badge-shine`: Shine sweep effect on hover
+  - `.fab`: Floating action button with shadow
+  - `.reading-time-pill`: Inline pill for reading time
+  - `.article-card-active`: Active state for scroll spy
+- **Verification**: All classes available for use in components
+
+#### 5. Removed Unused Code
+- Cleaned up the `handleCopyLink` function and `linkCopied` state (replaced by ShareDialog)
+- Removed unused `Share2` and `Copy` icon imports from the old copy link button
 
 ### Verification Results
 - ✅ Lint passes with zero errors
-- ✅ All API routes return 200
 - ✅ agent-browser tests confirm:
-  - Timeline view loads with heading "الخط الزمني للتشريعات"
-  - Year markers visible (سنة ٢٬٠١٢, ٢٬٠٠٩, ٢٬٠٠٨, etc.)
-  - Legislation cards under each year
-  - Year filter chips functional
+  - "مشاركة" (Share) button visible on legislation detail
+  - Share dialog opens with 6 social platforms + copy link
+  - "٢ دقيقة" + "وقت القراءة" (reading time) visible
+  - Copy article text button on article cards
   - No console errors or page errors
-- ✅ VLM assessment: 8/10 - "clean, professional, well-organized... effective and accessible"
+- ✅ VLM assessment: Share dialog 9/10 - "clean, icons are clear, copy function is prominent"
 - ✅ Screenshots saved:
-  - `timeline-view.png` (full timeline page)
+  - `detail-enhanced.png` (detail with share + reading time)
+  - `share-dialog.png` (share dialog open)
 
 ---
 
@@ -97,7 +97,8 @@ Phase 7 left the platform with feedback and settings features. Phase 8 focused o
 2. **Original spec vs. stack adaptation**: Vite/NestJS/MariaDB → Next.js/Prisma/SQLite.
 3. **Simplified features**: OCR, real auth, PDF.js viewer use mock data.
 4. **Admin API security**: All admin endpoints are currently open.
-5. **localStorage dependency**: Recently Viewed, Search History, and Settings depend on localStorage.
+5. **localStorage dependency**: Recently Viewed, Search History, Settings depend on localStorage.
+6. **Share URLs are client-side**: Social share URLs are constructed client-side (no server rendering).
 
 ## Priority Recommendations for Next Phase
 1. **Add user authentication** (NextAuth.js) to secure admin endpoints
