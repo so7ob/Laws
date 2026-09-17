@@ -145,9 +145,18 @@ export function HomeView() {
     <div>
       {/* Hero Section */}
       <section className="relative bg-hero-gradient text-white overflow-hidden">
-        {/* Animated floating dots background */}
-        <AnimatedDots count={35} />
-        <div className="absolute inset-0 pattern-arabesque opacity-10" />
+        {/* Animated pattern overlay - smooth circular movement */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'url(/banner-pattern.png)',
+            backgroundRepeat: 'repeat',
+            backgroundSize: '300px 300px',
+            opacity: 0.15,
+            mixBlendMode: 'overlay',
+            animation: 'pattern-rotate 60s linear infinite',
+          }}
+        />
         {/* Decorative SVG - elegant geometric pattern */}
         <svg className="absolute top-0 right-0 w-32 h-32 opacity-20" viewBox="0 0 128 128" fill="none">
           <path d="M0,0 L128,0 L128,128" stroke="white" strokeWidth="1.5" fill="none"/>
