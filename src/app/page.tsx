@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/app-store'
 import { Header } from '@/components/common/header'
 import { Footer } from '@/components/common/footer'
 import { ReadingProgress } from '@/components/common/reading-progress'
+import { KeyboardShortcuts } from '@/components/common/keyboard-shortcuts'
 import { HomeView } from '@/components/public/home-view'
 import { LegislationsView } from '@/components/public/legislations-view'
 import { LegislationDetailView } from '@/components/public/legislation-detail-view'
@@ -50,6 +51,7 @@ export default function Home() {
         <ViewRouter view={view} />
       </main>
       {view !== 'admin' && <Footer />}
+      {view !== 'admin' && <KeyboardShortcuts />}
     </div>
   )
 }

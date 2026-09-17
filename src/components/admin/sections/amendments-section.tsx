@@ -103,6 +103,7 @@ function AmendmentCard({ doc }: { doc: any }) {
   const source = doc.sourceLegislation
 
   return (
+    <Collapsible open={open} onOpenChange={setOpen}>
     <Card>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
@@ -133,7 +134,7 @@ function AmendmentCard({ doc }: { doc: any }) {
             </div>
           </div>
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" onClick={() => setOpen((o) => !o)}>
+            <Button variant="ghost" size="sm">
               <ChevronLeft
                 className={`size-4 transition-transform ${open ? '-rotate-90' : ''}`}
               />
@@ -141,7 +142,6 @@ function AmendmentCard({ doc }: { doc: any }) {
           </CollapsibleTrigger>
         </div>
 
-        <Collapsible open={open}>
           <CollapsibleContent className="space-y-2">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 border-t pt-3 text-xs">
               <div>
@@ -180,9 +180,9 @@ function AmendmentCard({ doc }: { doc: any }) {
               docId={doc.id}
             />
           </CollapsibleContent>
-        </Collapsible>
       </CardContent>
     </Card>
+    </Collapsible>
   )
 }
 

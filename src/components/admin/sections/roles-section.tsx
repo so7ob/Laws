@@ -112,6 +112,7 @@ function PermissionMatrix({ role }: { role: any }) {
 function RoleCard({ role }: { role: any }) {
   const [open, setOpen] = React.useState(false)
   return (
+    <Collapsible open={open} onOpenChange={setOpen}>
     <Card>
       <CardContent className="p-4 space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -144,7 +145,7 @@ function RoleCard({ role }: { role: any }) {
             </div>
           </div>
           <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" onClick={() => setOpen((o) => !o)}>
+            <Button variant="ghost" size="sm">
               <ChevronLeft
                 className={`size-4 transition-transform ${open ? '-rotate-90' : ''}`}
               />
@@ -167,8 +168,7 @@ function RoleCard({ role }: { role: any }) {
           </div>
         </div>
 
-        <Collapsible open={open}>
-          <CollapsibleContent>
+        <CollapsibleContent>
             <PermissionMatrix role={role} />
             <div className="flex gap-2 mt-3">
               <Button
@@ -193,9 +193,9 @@ function RoleCard({ role }: { role: any }) {
               </Button>
             </div>
           </CollapsibleContent>
-        </Collapsible>
       </CardContent>
     </Card>
+    </Collapsible>
   )
 }
 

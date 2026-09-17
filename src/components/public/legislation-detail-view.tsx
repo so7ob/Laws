@@ -10,6 +10,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import {
   ArrowRight,
   BookOpen,
   FileText,
@@ -31,6 +38,10 @@ import {
   AlertCircle,
   ExternalLink,
   Hash,
+  GitCompare,
+  Clock,
+  X,
+  Maximize2,
 } from 'lucide-react'
 import {
   LEGAL_STATUS_LABELS,
@@ -39,6 +50,7 @@ import {
   ATTACHMENT_TYPE_LABELS,
   RELATION_TYPE_LABELS,
   formatDate,
+  formatDateShort,
   CHANGE_TYPE_LABELS,
   highlight,
 } from '@/lib/constants'
@@ -414,6 +426,7 @@ function OverviewTab({ data }: { data: LegislationDetail }) {
 }
 
 function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: LegislationDetail; articleSearch: string; setArticleSearch: (s: string) => void }) {
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
   const filtered = articleSearch.trim()
     ? data.articles.filter((a) => {
         const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
@@ -422,31 +435,37 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
       })
     : data.articles
 
+  const selectedArticle = data.articles.find((a) => a.id === selectedArticleId)
+
   return (
     <div className="space-y-4">
-      <div className="relative max-w-xl">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          type="search"
-          value={articleSearch}
-          onChange={(e) => setArticleSearch(e.target.value)}
-          placeholder="ابحث داخل المواد..."
-          className="pr-10"
-        />
-      </div>
-      <div className="text-sm text-muted-foreground">
-        {filtered.length.toLocaleString('ar-EG')} من {data.articles.length.toLocaleString('ar-EG')} مادة
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+        <div className="relative flex-1 max-w-xl">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            value={articleSearch}
+            onChange={(e) => setArticleSearch(e.target.value)}
+            placeholder="ابحث داخل المواد..."
+            className="pr-10"
+          />
+        </div>
+        <div className="text-sm text-muted-foreground shrink-0">
+          <span className="article-number font-semibold text-foreground">{filtered.length.toLocaleString('ar-EG')}</span>
+          {' '}من{' '}
+          <span className="article-number">{data.articles.length.toLocaleString('ar-EG')}</span>{' '}مادة
+        </div>
       </div>
       <div className="space-y-3">
         {filtered.map((a, idx) => {
           const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
           const parts = articleSearch ? highlight(v?.textContent || '', articleSearch) : null
           return (
-            <Card key={a.id} id={`article-${a.id}`} className="border-border/60 hover:border-primary/30 transition-colors">
+            <Card key={a.id} id={`article-${a.id}`} className="border-border/60 hover:border-primary/30 transition-colors group">
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center article-number font-bold text-primary text-lg">
+                    <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-primary/15 to-secondary/15 flex items-center justify-center article-number font-bold text-primary text-lg border border-primary/20">
                       {a.publishedNumber || (idx + 1)}
                     </div>
                   </div>
@@ -480,6 +499,15 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
                     )}
                   </div>
                   <div className="flex flex-col gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="عرض النسخ السابقة"
+                      onClick={() => setSelectedArticleId(a.id)}
+                    >
+                      <History className="h-4 w-4 text-secondary group-hover:text-primary transition-colors" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="إضافة للمفضلة">
                       <Star className="h-4 w-4" />
                     </Button>
@@ -500,6 +528,213 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {selectedArticle && (
+        <ArticleVersionsDialog
+          article={selectedArticle}
+          onClose={() => setSelectedArticleId(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+function ArticleVersionsDialog({ article, onClose }: { article: any; onClose: () => void }) {
+  const [compareA, setCompareA] = useState<string | null>(null)
+  const [compareB, setCompareB] = useState<string | null>(null)
+  const [allVersions, setAllVersions] = useState<any[]>(article.versions || [])
+  const [loading, setLoading] = useState(false)
+  const slug = useAppStore((s) => s.slug)
+
+  useEffect(() => {
+    if (!slug) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true)
+    fetch(`/api/legislations/${slug}/versions`)
+      .then((r) => r.json())
+      .then((d) => {
+        const found = (d.items || []).find((a: any) => a.id === article.id)
+        if (found?.versions) setAllVersions(found.versions)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [slug, article.id])
+
+  // Sort by versionNo descending
+  const sortedVersions = [...allVersions].sort((a: any, b: any) => b.versionNo - a.versionNo)
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3 text-xl">
+            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <History className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <div>تاريخ نسخ المادة</div>
+              <div className="text-sm font-normal text-muted-foreground mt-0.5">
+                مادة ({article.publishedNumber}) • {sortedVersions.length.toLocaleString('ar-EG')} نسخة
+              </div>
+            </div>
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            عرض جميع نسخ المادة مع إمكانية المقارنة
+          </DialogDescription>
+        </DialogHeader>
+
+        <ScrollArea className="flex-1 max-h-[60vh]">
+          <div className="space-y-3 pr-1">
+            {sortedVersions.map((v: any, i: number) => {
+              const isCurrent = v.isCurrent
+              const isFuture = v.isFuture
+              const prevVersion = sortedVersions[i + 1]
+              const isSelectedA = compareA === v.id
+              const isSelectedB = compareB === v.id
+              return (
+                <div
+                  key={v.id}
+                  className={`rounded-lg border p-4 transition-all ${
+                    isCurrent
+                      ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/20'
+                      : isFuture
+                      ? 'border-blue-300 bg-blue-50/50 dark:bg-blue-950/20'
+                      : 'border-border bg-card'
+                  } ${isSelectedA ? 'ring-2 ring-primary' : ''} ${isSelectedB ? 'ring-2 ring-secondary' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={isCurrent ? 'bg-emerald-600' : isFuture ? 'bg-blue-600' : 'bg-secondary'}>
+                        <Clock className="h-3 w-3 ml-1" />
+                        النسخة {v.versionNo?.toLocaleString('ar-EG')}
+                      </Badge>
+                      {v.changeType && (
+                        <Badge variant="outline" className={
+                          v.changeType === 'initial' ? 'text-slate-600 bg-slate-50 border-slate-200' :
+                          v.changeType === 'amended' ? 'text-amber-700 bg-amber-50 border-amber-200' :
+                          v.changeType === 'added' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' :
+                          v.changeType === 'repealed' ? 'text-rose-700 bg-rose-50 border-rose-200' :
+                          'text-muted-foreground'
+                        }>
+                          {CHANGE_TYPE_LABELS[v.changeType] || v.changeType}
+                        </Badge>
+                      )}
+                      {isCurrent && (
+                        <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+                          <CheckCircle2 className="h-3 w-3 ml-1" />
+                          النص الحالي
+                        </Badge>
+                      )}
+                      {isFuture && (
+                        <Badge variant="outline" className="text-blue-700 bg-blue-50 border-blue-200">
+                          <Clock className="h-3 w-3 ml-1" />
+                          نفاذ مستقبلي
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant={isSelectedA ? 'default' : 'ghost'}
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setCompareA(isSelectedA ? null : v.id)}
+                      >
+                        مقارنة (أ)
+                      </Button>
+                      <Button
+                        variant={isSelectedB ? 'default' : 'ghost'}
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => setCompareB(isSelectedB ? null : v.id)}
+                      >
+                        مقارنة (ب)
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-[140px,1fr] gap-2 text-sm mb-2">
+                    <div className="text-muted-foreground text-xs">فترة النفاذ:</div>
+                    <div className="text-xs article-number">
+                      {formatDateShort(v.effectiveFrom)} — {v.effectiveTo ? formatDateShort(v.effectiveTo) : 'الآن'}
+                    </div>
+                    {v.changeReason && (
+                      <>
+                        <div className="text-muted-foreground text-xs">سبب التغيير:</div>
+                        <div className="text-xs">{v.changeReason}</div>
+                      </>
+                    )}
+                  </div>
+                  <div className="legal-text text-sm bg-muted/30 rounded-md p-3 leading-loose">
+                    {v.textContent || '—'}
+                  </div>
+                </div>
+              )
+            })}
+            {sortedVersions.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                لا توجد نسخ مسجلة لهذه المادة
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        {compareA && compareB && (
+          <VersionCompareBar
+            versionA={sortedVersions.find((v: any) => v.id === compareA)}
+            versionB={sortedVersions.find((v: any) => v.id === compareB)}
+            onClear={() => { setCompareA(null); setCompareB(null) }}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function VersionCompareBar({ versionA, versionB, onClear }: { versionA: any; versionB: any; onClear: () => void }) {
+  if (!versionA || !versionB) return null
+  const textA = versionA.textContent || ''
+  const textB = versionB.textContent || ''
+  const isSame = textA === textB
+
+  return (
+    <div className="border-t bg-muted/30 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <GitCompare className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold">مقارنة النسختين</span>
+          {isSame ? (
+            <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+              <CheckCircle2 className="h-3 w-3 ml-1" />
+              النصان متطابقان
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
+              النصان مختلفان
+            </Badge>
+          )}
+        </div>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClear}>
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
+          <div className="text-xs font-semibold text-primary mb-2">
+            النسخة {versionA.versionNo?.toLocaleString('ar-EG')} ({formatDateShort(versionA.effectiveFrom)})
+          </div>
+          <div className="legal-text text-xs leading-relaxed max-h-32 overflow-y-auto">
+            {textA || '—'}
+          </div>
+        </div>
+        <div className="rounded-md border border-secondary/30 bg-secondary/5 p-3">
+          <div className="text-xs font-semibold text-secondary mb-2">
+            النسخة {versionB.versionNo?.toLocaleString('ar-EG')} ({formatDateShort(versionB.effectiveFrom)})
+          </div>
+          <div className="legal-text text-xs leading-relaxed max-h-32 overflow-y-auto">
+            {textB || '—'}
+          </div>
+        </div>
       </div>
     </div>
   )

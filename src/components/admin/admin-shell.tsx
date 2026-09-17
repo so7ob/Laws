@@ -23,6 +23,8 @@ import {
   Home,
   Menu,
   ShieldCheck,
+  BookMarked,
+  FileEdit,
 } from 'lucide-react'
 import { DashboardSection } from './sections/dashboard-section'
 import { LegislationsSection } from './sections/legislations-section'
@@ -35,6 +37,8 @@ import { PoliciesSection } from './sections/policies-section'
 import { UsersSection } from './sections/users-section'
 import { RolesSection } from './sections/roles-section'
 import { SettingsSection } from './sections/settings-section'
+import { DictionarySection } from './sections/dictionary-section'
+import { CorrectionsSection } from './sections/corrections-section'
 
 type NavItem = {
   id: string
@@ -57,6 +61,7 @@ const NAV: NavGroup[] = [
     items: [
       { id: 'legislations', label: 'التشريعات', icon: Scale },
       { id: 'amendments', label: 'وثائق التعديل', icon: FileText },
+      { id: 'corrections', label: 'مسودات التصحيح', icon: FileEdit },
       { id: 'imports', label: 'الاستيراد', icon: Upload },
       { id: 'recycle', label: 'سلة الحذف', icon: Trash2 },
     ],
@@ -67,6 +72,7 @@ const NAV: NavGroup[] = [
       { id: 'reports', label: 'التقارير', icon: FlagTriangleRight },
       { id: 'audit', label: 'سجل التدقيق', icon: ScrollText },
       { id: 'policies', label: 'السياسات', icon: Shield },
+      { id: 'dictionary', label: 'قاموس المرادفات', icon: BookMarked },
     ],
   },
   {
@@ -86,11 +92,13 @@ const SECTION_TITLES: Record<string, string> = {
   dashboard: 'لوحة المعلومات',
   legislations: 'إدارة التشريعات',
   amendments: 'وثائق التعديل',
+  corrections: 'مسودات التصحيح',
   imports: 'الاستيراد',
   recycle: 'سلة الحذف',
   reports: 'تقارير الجودة',
   audit: 'سجل التدقيق',
   policies: 'سياسات العمليات',
+  dictionary: 'قاموس المرادفات القانونية',
   users: 'إدارة المستخدمين',
   roles: 'إدارة الأدوار',
   settings: 'إعدادات المنصة',
@@ -190,6 +198,8 @@ export function AdminShell() {
         return <LegislationsSection />
       case 'amendments':
         return <AmendmentsSection />
+      case 'corrections':
+        return <CorrectionsSection />
       case 'imports':
         return <ImportsSection />
       case 'recycle':
@@ -200,6 +210,8 @@ export function AdminShell() {
         return <AuditSection />
       case 'policies':
         return <PoliciesSection />
+      case 'dictionary':
+        return <DictionarySection />
       case 'users':
         return <UsersSection />
       case 'roles':

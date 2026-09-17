@@ -66,10 +66,10 @@ interface DashboardData {
 function KpiCard({ block }: { block: KpiBlock }) {
   const Icon = block.icon
   return (
-    <Card>
-      <CardContent className="p-4 space-y-3">
+    <Card className="group hover:shadow-md transition-shadow overflow-hidden relative">
+      <CardContent className="p-4 space-y-3 relative z-10">
         <div className="flex items-start justify-between">
-          <div className={block.tint + ' size-10 rounded-lg flex items-center justify-center'}>
+          <div className={`${block.tint} size-10 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform`}>
             <Icon className="size-5" />
           </div>
           <div className="text-3xl font-bold tabular-nums leading-none">
@@ -79,7 +79,7 @@ function KpiCard({ block }: { block: KpiBlock }) {
         <div className="space-y-1">
           <p className="text-sm font-medium">{block.label}</p>
           {block.breakdown && (
-            <div className="flex flex-wrap gap-2 text-xs">
+            <div className="flex flex-wrap gap-1.5 text-xs">
               {block.breakdown.map((b) => (
                 <Badge key={b.label} variant="outline" className={b.color}>
                   {b.label}: {arNum(b.value)}
@@ -89,6 +89,8 @@ function KpiCard({ block }: { block: KpiBlock }) {
           )}
         </div>
       </CardContent>
+      {/* Decorative bottom accent line */}
+      <div className="absolute bottom-0 inset-x-0 h-1 bg-gradient-to-l from-primary/30 via-secondary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
     </Card>
   )
 }

@@ -135,22 +135,136 @@ The platform was stable and functional. Phase 2 focused on:
 
 ---
 
+## Phase 3 Status (Advanced Features & Bug Fixes - COMPLETED)
+
+### Current Assessment
+Phase 2 left the platform stable with new features (account, compare, theme toggle). Phase 3 focused on:
+1. **Bug fix**: Collapsible components in admin sections (amendments, roles, corrections) crashed due to `CollapsibleTrigger` being outside `Collapsible` context
+2. **New features**: Synonym Dictionary Editor, Corrections Workflow UI, Article Version Comparison Dialog, Keyboard Shortcuts overlay, Breadcrumb component
+3. **Styling improvements**: Enhanced KPI cards with hover effects, improved article cards with gradient badges
+4. **Additional seed data**: Dictionary entries, correction drafts, multiple article versions
+
+### Goals / Completed Modifications / Verification Results
+
+#### 1. Bug Fix: Collapsible Component Crash (3 admin sections)
+- **Issue**: `CollapsibleTrigger` was rendered OUTSIDE the `<Collapsible>` wrapper in `amendments-section.tsx`, `roles-section.tsx`, and `corrections-section.tsx`, causing a runtime error: "CollapsibleTrigger must be used within Collapsible"
+- **Fix**: Restructured all 3 components to wrap the entire Card content inside `<Collapsible open={open} onOpenChange={setOpen}>`, removed duplicate inner `<Collapsible>` wrappers, removed manual `onClick` handlers from `CollapsibleTrigger` (Radix handles toggle automatically)
+- **Verification**: agent-browser tests confirm amendments, corrections, and roles sections now load without errors
+
+#### 2. New Feature: Synonym Dictionary Editor (قاموس المرادفات القانونية)
+- **API route**: `/api/admin/dictionary` (GET, POST, PUT, DELETE)
+  - GET returns published dictionary + draft + all versions
+  - POST with actions: `create_draft`, `add_entry`, `publish`
+  - PUT updates an entry (canonical, synonym, isActive)
+  - DELETE removes an entry
+- **Component**: `src/components/admin/sections/dictionary-section.tsx` (~580 lines)
+  - Versions panel: horizontal scroll of version cards with status badges
+  - Draft editor: add/edit/delete entries with Switch toggles, search filter
+  - Published view: read-only entries with "create draft" button
+  - Empty state with "create new dictionary" CTA
+- **Seed data**: Published dictionary v1 with 30 legal synonym entries (قانون→تشريع, دستور→قانون أساسي, محكمة→قضاء, etc.)
+- **Verification**: API returns 200 with 30 entries; agent-browser confirms section loads with table of entries
+
+#### 3. New Feature: Corrections Workflow UI (مسودات التصحيح)
+- **API route**: `/api/admin/corrections` (GET, POST, PUT, DELETE)
+  - GET with optional status/legislationId filters
+  - POST creates new correction draft
+  - PUT with actions: `approve`, `publish`, `reject`
+  - DELETE removes a correction
+- **Component**: `src/components/admin/sections/corrections-section.tsx` (~620 lines)
+  - Stats strip: 4 cards (total, draft, approved, published)
+  - Filter bar: status + legislation selectors
+  - Correction cards with target type badge, status badge, legislation link, reason, dates
+  - Collapsible diff showing current content (rose) vs proposed content (emerald)
+  - Per-status actions: draft→اعتماد/تحرير/حذف, approved→نشر/رفض
+  - Add correction dialog with legislation picker, target type, article/attachment picker, content, reason
+- **Seed data**: 3 correction drafts (draft for constitution, approved for civil code, published for penal code)
+- **Verification**: API returns 200 with 3 corrections; agent-browser confirms section loads with cards
+
+#### 4. New Feature: Article Version Comparison Dialog
+- **Component**: Added to `src/components/public/legislation-detail-view.tsx`
+  - `ArticleVersionsDialog`: Full-screen dialog showing all versions of an article
+  - Fetches versions on-demand from `/api/legislations/[slug]/versions`
+  - Each version card shows: version number, change type badge, effective period, change reason, text content
+  - Current version highlighted with emerald, future version with blue
+  - "مقارنة (أ)" and "مقارنة (ب)" buttons to select 2 versions for comparison
+  - `VersionCompareBar`: Side-by-side comparison with identical/different badge
+- **Enhanced ArticlesTab**: Every article now has a History button (icon) that opens the dialog
+- **Seed data**: Added second version to constitution article 5 (amended text), future version to article 7
+- **Verification**: agent-browser confirms dialog opens showing "مادة (5) • ٢ نسخة" with 2 compare button pairs
+
+#### 5. New Feature: Keyboard Shortcuts Overlay
+- **Component**: `src/components/common/keyboard-shortcuts.tsx`
+  - Press `?` (or `Shift+/`) to open the shortcuts dialog
+  - 12 shortcuts documented with kbd badges and icons
+  - Shortcuts: `?` (show help), `/` (focus search), `g h` (home), `g s` (search), `g l` (legislations), `g a` (account), `g c` (compare), `g n` (news), `g d` (admin), `t` (toggle theme), `↑` (back to top), `Esc` (close)
+  - Two-key combos (g + key) with 800ms timeout
+  - Ignores shortcuts when typing in inputs/textareas (except Esc)
+- **Integration**: Added `<KeyboardShortcuts />` to `src/app/page.tsx` (hidden on admin view)
+- **Verification**: agent-browser confirms pressing `Shift+/` opens the dialog with heading "اختصارات لوحة المفاتيح"
+
+#### 6. New Feature: Breadcrumb Component
+- **Component**: `src/components/common/breadcrumb.tsx`
+  - Shows navigation path: الرئيسية → [View Label] → [Custom crumb]
+  - `VIEW_LABELS` map for all 16 views with icons
+  - Clickable crumbs with animated underline on hover
+  - Last crumb highlighted as current page
+  - Hidden on home view
+- **Integration**: Component created, ready to be added to sub-page views (not yet wired into all views to avoid breaking existing layouts)
+
+#### 7. Enhanced Admin Dashboard KPI Cards
+- **Improvement**: Updated `KpiCard` in `dashboard-section.tsx`
+  - Added hover shadow effect (`group hover:shadow-md`)
+  - Icon container scales on hover (`group-hover:scale-110`)
+  - Decorative bottom accent line that appears on hover (gradient from primary to secondary)
+  - Reduced gap between breakdown badges (gap-1.5 instead of gap-2)
+- **Verification**: Lint passes, no visual regressions
+
+#### 8. Admin Panel Navigation Updates
+- **Updated** `src/components/admin/admin-shell.tsx`:
+  - Added "مسودات التصحيح" (corrections) to المحتوى group with FileEdit icon
+  - Added "قاموس المرادفات" (dictionary) to الجودة والتدقيق group with BookMarked icon
+  - Updated SECTION_TITLES with new entries
+  - Updated renderSection switch with new cases
+- **Result**: Admin sidebar now shows 13 sections (was 11)
+
+### Verification Results
+- ✅ Lint passes with zero errors
+- ✅ All new API routes return 200 (dictionary, corrections)
+- ✅ agent-browser tests confirm:
+  - Dictionary section loads with 30 entries in published table
+  - Corrections section loads with 3 correction cards
+  - Amendments section no longer crashes (Collapsible fix)
+  - Roles section no longer crashes (Collapsible fix)
+  - Article Versions Dialog opens showing version count and compare buttons
+  - Keyboard shortcuts overlay opens with `?` key
+  - Admin sidebar shows all 13 sections
+- ✅ No console errors or page errors
+- ✅ Screenshots saved:
+  - `versions-dialog.png` (article versions dialog - 1 version)
+  - `versions-dialog-2.png` (article versions dialog - 2 versions)
+  - `keyboard-shortcuts.png` (shortcuts overlay)
+  - `home-phase3.png` (home page after phase 3)
+
+---
+
 ## Unresolved Issues / Risks
-1. **Dev server memory**: Next.js 16 + Turbopack consumes ~1.3GB memory under load. Using `NODE_OPTIONS=--max-old-space-size=2048`. Not a production concern.
+1. **Dev server memory**: Next.js 16 + Turbopack consumes ~1.4GB memory under load. Using `NODE_OPTIONS=--max-old-space-size=2048`. Not a production concern.
 2. **Original spec vs. stack adaptation**: Vite/NestJS/MariaDB → Next.js/Prisma/SQLite per project constraints. All explicit functional requirements implemented.
 3. **Simplified features**: OCR, real auth, PDF.js viewer use mock data (backend hooks exist).
-4. **SQLite + Prisma limitations**: Implicit many-to-many replaced with explicit join tables (LegislationSubject, LegislationClassification).
+4. **SQLite + Prisma limitations**: Implicit many-to-many replaced with explicit join tables.
 5. **Admin API security**: All admin endpoints are currently open (no auth enforcement). NextAuth.js integration recommended for production.
-6. **VLM feedback on spacing**: Some sections (latest legislation cards, middle sections) could benefit from more whitespace. Improved in Phase 2 but could be further refined.
+6. **Breadcrumb not yet wired**: The Breadcrumb component exists but is not yet integrated into sub-page views (legislation detail, search, etc.). Ready for next phase.
+7. **VLM feedback on spacing**: Some sections could benefit from more whitespace. Improved in Phase 2-3 but could be further refined.
 
 ## Priority Recommendations for Next Phase
-1. **Add user authentication** (NextAuth.js) to secure admin endpoints and personalize the account panel
-2. **Add corrections workflow UI** (CorrectionDraft model exists in schema but UI not built)
-3. **Add synonym dictionary editor** (SearchDictionary model exists but UI not built)
-4. **Add Arabic OCR** via Tesseract for PDF/image imports
-5. **Implement full-text search** via SQLite FTS5 for better Arabic search performance
-6. **Add real file upload** for sources (currently mocked)
-7. **Add WebSocket notifications** for long-running import tasks
-8. **Further styling refinements**: More whitespace in dense sections, bolder CTAs per VLM feedback
-9. **Add breadcrumb component** on all sub-pages for better navigation context
-10. **Add keyboard shortcuts overlay** (? key) for power users
+1. **Wire Breadcrumb component** into legislation detail, search, account, compare, and news views for navigation context
+2. **Add user authentication** (NextAuth.js) to secure admin endpoints and personalize the account panel
+3. **Add Arabic OCR** via Tesseract for PDF/image imports
+4. **Implement full-text search** via SQLite FTS5 for better Arabic search performance
+5. **Add real file upload** for sources (currently mocked)
+6. **Add WebSocket notifications** for long-running import tasks
+7. **Further styling refinements**: More whitespace in dense sections per VLM feedback
+8. **Add print-optimized stylesheet** for legislation detail (legal documents)
+9. **Add export to PDF/DOCX** for legislation detail
+10. **Add "effective at date" picker** on legislation detail to view historical versions
