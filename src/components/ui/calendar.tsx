@@ -37,9 +37,14 @@ function Calendar({
       captionLayout={captionLayout}
       formatters={{
         formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+          date.toLocaleString("ar", { month: "long" }),
+        formatWeekdayName: (date) =>
+          date.toLocaleString("ar", { weekday: "short" }),
+        formatCaption: (date) =>
+          date.toLocaleString("ar", { month: "long", year: "numeric" }),
         ...formatters,
       }}
+      dir="rtl"
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
         months: cn(
