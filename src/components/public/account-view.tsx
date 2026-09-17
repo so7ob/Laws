@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -60,6 +61,12 @@ import {
   XCircle,
   Inbox,
   Loader2,
+  Settings,
+  History,
+  Download,
+  Bell,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import {
   LEGAL_STATUS_LABELS,
@@ -200,6 +207,10 @@ export function AccountView() {
               <MessageCircle className="size-4" />
               المشاركات
             </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-1.5 py-2">
+              <Settings className="size-4" />
+              الإعدادات
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="favorites" className="mt-6">
@@ -213,6 +224,9 @@ export function AccountView() {
           </TabsContent>
           <TabsContent value="participations" className="mt-6">
             <ParticipationsTab />
+          </TabsContent>
+          <TabsContent value="settings" className="mt-6">
+            <SettingsTab />
           </TabsContent>
         </Tabs>
       </div>
@@ -1191,6 +1205,218 @@ function ParticipationsTab() {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+function SettingsTab() {
+  const [recentCount, setRecentCount] = useState(0)
+  const [searchHistoryCount, setSearchHistoryCount] = useState(0)
+
+  useEffect(() => {
+    try {
+      const recent = localStorage.getItem('recentlyViewed')
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (recent) setRecentCount(JSON.parse(recent).length)
+      const history = localStorage.getItem('searchHistory')
+      if (history) setSearchHistoryCount(JSON.parse(history).length)
+    } catch {}
+  }, [])
+
+  function clearRecentlyViewed() {
+    try {
+      localStorage.removeItem('recentlyViewed')
+      setRecentCount(0)
+      toast.success('تم مسح قائمة "شوهد مؤخرًا"')
+    } catch {
+      toast.error('تعذر المسح')
+    }
+  }
+
+  function clearSearchHistory() {
+    try {
+      localStorage.removeItem('searchHistory')
+      setSearchHistoryCount(0)
+      toast.success('تم مسح سجل البحث')
+    } catch {
+      toast.error('تعذر المسح')
+    }
+  }
+
+  function clearAllData() {
+    try {
+      localStorage.removeItem('recentlyViewed')
+      localStorage.removeItem('searchHistory')
+      setRecentCount(0)
+      setSearchHistoryCount(0)
+      toast.success('تم مسح جميع البيانات المحلية')
+    } catch {
+      toast.error('تعذر المسح')
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+              <History className="h-4 w-4 text-primary" />
+            </div>
+            البيانات المحلية
+          </CardTitle>
+          <CardDescription className="text-xs">
+            إدارة البيانات المخزنة محليًا في متصفحك
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Recently viewed */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/30">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-md bg-primary/10 flex items-center justify-center">
+                <History className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">قائمة "شوهد مؤخرًا"</div>
+                <div className="text-xs text-muted-foreground">
+                  {recentCount > 0
+                    ? `${recentCount.toLocaleString('ar-EG')} تشريع`
+                    : 'لا توجد عناصر'}
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearRecentlyViewed}
+              disabled={recentCount === 0}
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+            >
+              <Trash2 className="h-4 w-4 ml-1.5" />
+              مسح
+            </Button>
+          </div>
+
+          {/* Search history */}
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/30">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-md bg-secondary/10 flex items-center justify-center">
+                <Search className="h-4 w-4 text-secondary" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">سجل البحث</div>
+                <div className="text-xs text-muted-foreground">
+                  {searchHistoryCount > 0
+                    ? `${searchHistoryCount.toLocaleString('ar-EG')} بحث`
+                    : 'لا توجد عمليات بحث'}
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearSearchHistory}
+              disabled={searchHistoryCount === 0}
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
+            >
+              <Trash2 className="h-4 w-4 ml-1.5" />
+              مسح
+            </Button>
+          </div>
+
+          {/* Clear all */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="w-full text-rose-600 hover:text-rose-700 hover:bg-rose-50">
+                <Trash2 className="h-4 w-4 ml-1.5" />
+                مسح جميع البيانات المحلية
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>تأكيد مسح البيانات</AlertDialogTitle>
+                <AlertDialogDescription>
+                  سيتم مسح جميع البيانات المحلية المخزنة في متصفحك (قائمة "شوهد مؤخرًا" وسجل البحث). هذا الإجراء لا يمكن التراجع عنه.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={clearAllData} className="bg-rose-600 hover:bg-rose-700">
+                  نعم، امسح الكل
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </CardContent>
+      </Card>
+
+      {/* Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-secondary/10 flex items-center justify-center">
+              <Settings className="h-4 w-4 text-secondary" />
+            </div>
+            التفضيلات
+          </CardTitle>
+          <CardDescription className="text-xs">
+            إعدادات العرض والإشعارات
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/60">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-md bg-amber-100 dark:bg-amber-950/30 flex items-center justify-center">
+                <Bell className="h-4 w-4 text-amber-600" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">إشعارات التشريعات الجديدة</div>
+                <div className="text-xs text-muted-foreground">تنبيه عند نشر تشريعات جديدة</div>
+              </div>
+            </div>
+            <Switch disabled />
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-lg border border-border/60">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-md bg-blue-100 dark:bg-blue-950/30 flex items-center justify-center">
+                <Download className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <div className="text-sm font-medium">تنزيل تلقائي للملفات</div>
+                <div className="text-xs text-muted-foreground">تنزيل ملفات الملاحق تلقائيًا</div>
+              </div>
+            </div>
+            <Switch disabled />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Account info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+              <FileText className="h-4 w-4 text-primary" />
+            </div>
+            معلومات الحساب
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex items-center justify-between border-b border-border/30 py-1.5">
+            <span className="text-muted-foreground">المستخدم</span>
+            <span className="font-medium">قارئ تجريبي (reader)</span>
+          </div>
+          <div className="flex items-center justify-between border-b border-border/30 py-1.5">
+            <span className="text-muted-foreground">الدور</span>
+            <span className="font-medium">قارئ / باحث</span>
+          </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-muted-foreground">نوع الحساب</span>
+            <span className="font-medium">حساب تجريبي</span>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

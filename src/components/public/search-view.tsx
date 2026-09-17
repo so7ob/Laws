@@ -17,7 +17,7 @@ import {
 import {
   Search, Filter, FileText, Scale, LayoutGrid, Download,
   ChevronLeft, Hash, Calendar, Building2, TrendingUp,
-  Target, X, Sparkles, BarChart3, Clock,
+  Target, X, Sparkles, BarChart3, Clock, Star,
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDateShort, highlight, relativeTime } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
@@ -385,18 +385,42 @@ export function SearchView() {
             {activeHit === 'legislations' && data.items.map((leg) => {
               const status = LEGAL_STATUS_LABELS[leg.legalStatus] || LEGAL_STATUS_LABELS.active
               return (
-                <Card key={leg.id} className="border-border/60 hover:border-primary/40 transition-colors cursor-pointer" onClick={() => openLegislation(leg.slug)}>
+                <Card key={leg.id} className="border-border/60 hover:border-primary/40 transition-colors cursor-pointer group" onClick={() => openLegislation(leg.slug)}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2">
                         <Badge className="bg-primary/10 text-primary border-primary/30">{leg.type?.nameAr}</Badge>
                         <Badge variant="secondary" className={`text-[11px] ${status.color}`}>{status.label}</Badge>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
-                        <Download className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            fetch('/api/account/favorites', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ legislationId: leg.id }),
+                            }).then((r) => r.json()).then((res) => {
+                              if (res.alreadyExists) {
+                                toast.info('التشريع موجود في المفضلة مسبقًا')
+                              } else {
+                                toast.success('تمت الإضافة إلى المفضلة')
+                              }
+                            }).catch(() => toast.error('تعذرت الإضافة'))
+                          }}
+                          title="إضافة للمفضلة"
+                        >
+                          <Star className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()} title="تصدير">
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <h3 className="font-bold text-base mb-1">{leg.officialTitle}</h3>
+                    <h3 className="font-bold text-base mb-1 group-hover:text-primary transition-colors">{leg.officialTitle}</h3>
                     <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{leg.preamble}</p>
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{leg.authority?.nameAr}</span>

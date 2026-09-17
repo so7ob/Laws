@@ -67,6 +67,7 @@ import {
 } from '@/lib/constants'
 import { diffTexts, mergeSegments, getDiffStats } from '@/lib/diff'
 import { toast } from 'sonner'
+import { LegislationFeedback } from '@/components/public/legislation-feedback'
 
 interface LegislationDetail {
   id: string
@@ -215,6 +216,20 @@ export function LegislationDetailView() {
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6">
+      {/* Print-only header */}
+      <div className="print-only hidden">
+        <div className="flex items-center justify-between border-b-2 border-black pb-2 mb-4">
+          <div>
+            <div className="text-lg font-bold">منصة التشريعات اليمنية</div>
+            <div className="text-xs">مرجعية قانونية موثوقة</div>
+          </div>
+          <div className="text-xs text-left">
+            <div>تاريخ الطباعة: {formatDate(new Date())}</div>
+            <div>النوع: {data.type?.nameAr}</div>
+          </div>
+        </div>
+      </div>
+
       {/* Breadcrumb */}
       <Breadcrumb
         customCrumbs={[
@@ -310,6 +325,7 @@ export function LegislationDetailView() {
                 <Star className="h-4 w-4 ml-1.5" />
                 <span className="hidden sm:inline">أضف للمفضلة</span>
               </Button>
+              <LegislationFeedback legislationId={data.id} legislationTitle={data.officialTitle} />
               <Button variant="outline" size="sm" onClick={handleReport}>
                 <Flag className="h-4 w-4 ml-1.5" />
                 <span className="hidden sm:inline">إبلاغ</span>
