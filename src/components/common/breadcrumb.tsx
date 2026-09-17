@@ -24,6 +24,7 @@ const VIEW_LABELS: Record<string, { label: string; icon: any }> = {
   page: { label: 'صفحة', icon: FileText },
   account: { label: 'حساب الباحث', icon: User },
   compare: { label: 'مقارنة التشريعات', icon: GitCompare },
+  stats: { label: 'إحصاءات المنصة', icon: FileText },
   'legislation-detail': { label: 'تفاصيل التشريع', icon: Scale },
   admin: { label: 'لوحة الإدارة', icon: Shield },
 }

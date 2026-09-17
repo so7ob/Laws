@@ -65,6 +65,7 @@ import {
   CHANGE_TYPE_LABELS,
   highlight,
 } from '@/lib/constants'
+import { diffTexts, mergeSegments, getDiffStats } from '@/lib/diff'
 import { toast } from 'sonner'
 
 interface LegislationDetail {
@@ -899,10 +900,14 @@ function VersionCompareBar({ versionA, versionB, onClear }: { versionA: any; ver
   const textB = versionB.textContent || ''
   const isSame = textA === textB
 
+  // Compute word-level diff
+  const segments = isSame ? [] : mergeSegments(diffTexts(textA, textB))
+  const stats = isSame ? { added: 0, removed: 0, unchanged: 0, total: 0, similarity: 100 } : getDiffStats(textA, textB)
+
   return (
-    <div className="border-t bg-muted/30 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
+    <div className="border-t bg-muted/30 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <GitCompare className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold">مقارنة النسختين</span>
           {isSame ? (
@@ -911,33 +916,99 @@ function VersionCompareBar({ versionA, versionB, onClear }: { versionA: any; ver
               النصان متطابقان
             </Badge>
           ) : (
-            <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
-              النصان مختلفان
-            </Badge>
+            <>
+              <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200">
+                تشابه {stats.similarity.toLocaleString('ar-EG')}%
+              </Badge>
+              {stats.added > 0 && (
+                <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200">
+                  +{stats.added.toLocaleString('ar-EG')} إضافة
+                </Badge>
+              )}
+              {stats.removed > 0 && (
+                <Badge variant="outline" className="text-rose-700 bg-rose-50 border-rose-200">
+                  -{stats.removed.toLocaleString('ar-EG')} حذف
+                </Badge>
+              )}
+            </>
           )}
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClear}>
           <X className="h-4 w-4" />
         </Button>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-md border border-primary/30 bg-primary/5 p-3">
-          <div className="text-xs font-semibold text-primary mb-2">
-            النسخة {versionA.versionNo?.toLocaleString('ar-EG')} ({formatDateShort(versionA.effectiveFrom)})
-          </div>
-          <div className="legal-text text-xs leading-relaxed max-h-32 overflow-y-auto">
-            {textA || '—'}
-          </div>
+
+      {isSame ? (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50/50 p-4 text-center text-sm text-emerald-700">
+          <CheckCircle2 className="h-5 w-5 mx-auto mb-1" />
+          النصان متطابقان تمامًا
         </div>
-        <div className="rounded-md border border-secondary/30 bg-secondary/5 p-3">
-          <div className="text-xs font-semibold text-secondary mb-2">
-            النسخة {versionB.versionNo?.toLocaleString('ar-EG')} ({formatDateShort(versionB.effectiveFrom)})
+      ) : (
+        <>
+          {/* Unified diff view */}
+          <div className="rounded-md border border-border bg-card p-3 mb-3 max-h-48 overflow-y-auto">
+            <div className="text-xs font-semibold text-muted-foreground mb-2">عرض الفروقات (موحّد)</div>
+            <p className="legal-text text-sm leading-loose">
+              {segments.map((seg, i) => (
+                <span
+                  key={i}
+                  className={
+                    seg.type === 'added'
+                      ? 'bg-emerald-100/70 text-emerald-900 rounded px-0.5 mx-0.5 dark:bg-emerald-900/40 dark:text-emerald-100'
+                      : seg.type === 'removed'
+                      ? 'bg-rose-100/70 text-rose-900 line-through rounded px-0.5 mx-0.5 dark:bg-rose-900/40 dark:text-rose-100'
+                      : ''
+                  }
+                >
+                  {seg.text}
+                </span>
+              ))}
+            </p>
           </div>
-          <div className="legal-text text-xs leading-relaxed max-h-32 overflow-y-auto">
-            {textB || '—'}
+
+          {/* Side-by-side view */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-md border border-rose-200 bg-rose-50/30 p-3">
+              <div className="text-xs font-semibold text-rose-700 mb-2 flex items-center gap-1">
+                <span className="size-2 rounded-full bg-rose-500" />
+                النسخة {versionA.versionNo?.toLocaleString('ar-EG')} ({formatDateShort(versionA.effectiveFrom)})
+              </div>
+              <div className="legal-text text-xs leading-relaxed max-h-32 overflow-y-auto">
+                {segments.filter((s) => s.type !== 'added').map((seg, i) => (
+                  <span
+                    key={i}
+                    className={seg.type === 'removed' ? 'bg-rose-200/60 rounded px-0.5' : ''}
+                  >
+                    {seg.text}{' '}
+                  </span>
+                ))}
+                {segments.filter((s) => s.type !== 'added').length === 0 && (
+                  <span className="text-muted-foreground text-xs">— لا يوجد محتوى —</span>
+                )}
+              </div>
+            </div>
+            <div className="rounded-md border border-emerald-200 bg-emerald-50/30 p-3">
+              <div className="text-xs font-semibold text-emerald-700 mb-2 flex items-center gap-1">
+                <span className="size-2 rounded-full bg-emerald-500" />
+                النسخة {versionB.versionNo?.toLocaleString('ar-EG')} ({formatDateShort(versionB.effectiveFrom)})
+              </div>
+              <div className="legal-text text-xs leading-relaxed max-h-32 overflow-y-auto">
+                {segments.filter((s) => s.type !== 'removed').map((seg, i) => (
+                  <span
+                    key={i}
+                    className={seg.type === 'added' ? 'bg-emerald-200/60 rounded px-0.5' : ''}
+                  >
+                    {seg.text}{' '}
+                  </span>
+                ))}
+                {segments.filter((s) => s.type !== 'removed').length === 0 && (
+                  <span className="text-muted-foreground text-xs">— لا يوجد محتوى —</span>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   )
 }

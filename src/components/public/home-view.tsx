@@ -32,6 +32,7 @@ import {
   Users,
   Building2,
   CheckCircle2,
+  BarChart3,
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDate, relativeTime } from '@/lib/constants'
 import { RecentlyViewed } from '@/components/public/recently-viewed'
@@ -69,7 +70,7 @@ const RESEARCHER_TOOLS = [
   { label: 'حساب الباحث', target: 'account' as const, icon: Bookmark, desc: 'مفضلاتك وبحوثك وملاحظاتك' },
   { label: 'مقارنة التشريعات', target: 'compare' as const, icon: GitCompare, desc: 'قارن تشريعين جنبًا إلى جنب' },
   { label: 'البحث المتقدم', target: 'search' as const, icon: Search, desc: 'بحث في النصوص والمواد والملاحق' },
-  { label: 'المنظومة التشريعية', target: 'legislative-system' as const, icon: Network, desc: 'فهم بنية التشريعات اليمنية' },
+  { label: 'إحصاءات المنصة', target: 'stats' as const, icon: BarChart3, desc: 'إحصاءات وتحليلات بصرية' },
 ]
 
 const SUBJECT_CARDS = [

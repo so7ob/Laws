@@ -17,6 +17,7 @@ export type View =
   | 'admin'
   | 'account'
   | 'compare'
+  | 'stats'
 
 interface AppState {
   view: View

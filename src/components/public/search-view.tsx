@@ -17,9 +17,9 @@ import {
 import {
   Search, Filter, FileText, Scale, LayoutGrid, Download,
   ChevronLeft, Hash, Calendar, Building2, TrendingUp,
-  Target, X, Sparkles, BarChart3,
+  Target, X, Sparkles, BarChart3, Clock,
 } from 'lucide-react'
-import { LEGAL_STATUS_LABELS, formatDateShort, highlight } from '@/lib/constants'
+import { LEGAL_STATUS_LABELS, formatDateShort, highlight, relativeTime } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
 import { exportToCSV } from '@/lib/csv-export'
 import { toast } from 'sonner'
@@ -100,7 +100,40 @@ export function SearchView() {
     e.preventDefault()
     setPage(1)
     doSearch()
+    // Track search history in localStorage
+    if (query.trim() && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('searchHistory')
+        const list = stored ? JSON.parse(stored) : []
+        const filtered = list.filter((item: any) => item.query !== query.trim())
+        const newItem = {
+          query: query.trim(),
+          scope,
+          timestamp: new Date().toISOString(),
+        }
+        const updated = [newItem, ...filtered].slice(0, 10)
+        localStorage.setItem('searchHistory', JSON.stringify(updated))
+      } catch {}
+    }
   }
+
+  function clearSearchHistory() {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.removeItem('searchHistory')
+      setSearchHistoryItems([])
+      toast.success('تم مسح سجل البحث')
+    } catch {}
+  }
+
+  const [searchHistoryItems, setSearchHistoryItems] = useState<any[]>([])
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const stored = localStorage.getItem('searchHistory')
+      if (stored) setSearchHistoryItems(JSON.parse(stored))
+    } catch {}
+  }, [query])
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -218,6 +251,7 @@ export function SearchView() {
 
       {/* Results */}
       {!data && !loading && (
+        <>
         <Card className="border-dashed">
           <CardContent className="py-16 text-center">
             <Sparkles className="h-12 w-12 mx-auto mb-3 text-primary/40" />
@@ -225,6 +259,42 @@ export function SearchView() {
             <p className="text-sm text-muted-foreground">اكتب عبارة للبحث في نصوص التشريعات والمواد</p>
           </CardContent>
         </Card>
+
+        {/* Search history */}
+        {searchHistoryItems.length > 0 && (
+          <Card className="mt-4">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Clock className="h-4 w-4 text-primary" />
+                سجل البحث السابق
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={clearSearchHistory}>
+                مسح السجل
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {searchHistoryItems.slice(0, 8).map((item, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setQuery(item.query)
+                      setScope(item.scope || 'all')
+                      setPage(1)
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-primary/10 hover:text-primary border border-border hover:border-primary/30 transition-colors"
+                  >
+                    {item.query}
+                    <span className="text-[10px] text-muted-foreground mr-1.5">
+                      {relativeTime(item.timestamp)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        </>
       )}
 
       {loading && (

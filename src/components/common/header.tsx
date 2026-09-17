@@ -28,6 +28,7 @@ import {
   User,
   GitCompare,
   Bookmark,
+  BarChart3,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -51,6 +52,7 @@ const NAV_GROUPS = [
     label: 'المنظومة',
     items: [
       { label: 'المنظومة التشريعية', target: 'legislative-system', icon: Network },
+      { label: 'إحصاءات المنصة', target: 'stats', icon: BarChart3 },
       { label: 'السياسات والأدلة', target: 'policies', icon: FileText },
       { label: 'الأخبار', target: 'news', icon: Newspaper },
     ],

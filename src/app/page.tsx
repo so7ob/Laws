@@ -12,6 +12,7 @@ import { SearchView } from '@/components/public/search-view'
 import { NewsView, NewsDetailView, PublicPageView } from '@/components/public/content-views'
 import { AccountView } from '@/components/public/account-view'
 import { CompareView } from '@/components/public/compare-view'
+import { StatsView } from '@/components/public/stats-view'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { useEffect } from 'react'
 
@@ -91,6 +92,8 @@ function ViewRouter({ view }: { view: string }) {
       return <AccountView />
     case 'compare':
       return <CompareView />
+    case 'stats':
+      return <StatsView />
     case 'admin':
       return <AdminShell />
     default:
