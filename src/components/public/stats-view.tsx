@@ -23,6 +23,7 @@ import {
   Target,
 } from 'lucide-react'
 import { Breadcrumb } from '@/components/common/breadcrumb'
+import { formatYear } from '@/lib/constants'
 
 interface StatsData {
   counts: {
@@ -225,7 +226,7 @@ export function StatsView() {
                       title={`${y.year}: ${y.count}`}
                     />
                     <span className="text-[10px] text-muted-foreground article-number rotate-45 origin-top whitespace-nowrap">
-                      {y.year?.toLocaleString('ar-EG')}
+                      {formatYear(y.year)}
                     </span>
                   </div>
                 )
@@ -322,7 +323,7 @@ export function StatsView() {
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                     <Badge variant="outline" className="text-[9px] py-0 px-1.5">{leg.type?.nameAr}</Badge>
-                    {leg.year && <span className="article-number">{leg.year.toLocaleString('ar-EG')}</span>}
+                    {leg.year && <span className="article-number">{formatYear(leg.year)}</span>}
                   </div>
                 </div>
               </button>

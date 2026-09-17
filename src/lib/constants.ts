@@ -112,6 +112,61 @@ export function truncate(text: string, max: number): string {
   return text.substring(0, max - 1) + '…'
 }
 
+/**
+ * Format a year without thousands separator.
+ * Example: 2001 → "٢٠٠١" (not "٢٬٠٠١")
+ */
+export function formatYear(year: number | null | undefined): string {
+  if (year === null || year === undefined) return '—'
+  try {
+    return year.toLocaleString('ar-EG-u-nu-arab', { useGrouping: false })
+  } catch {
+    return String(year)
+  }
+}
+
+/**
+ * Strip raw Markdown formatting from text for display.
+ * Removes **bold**, *italic*, and other Markdown markers while preserving content.
+ * Does NOT strip literal asterisks that are part of the legal text (single * in context).
+ */
+export function stripMarkdown(text: string): string {
+  if (!text) return ''
+  return text
+    // Remove bold markers: **text** → text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    // Remove italic markers: *text* → text (only when surrounded by word boundaries)
+    .replace(/(?<![\w*])\*([^*\n]+?)\*(?![\w*])/g, '$1')
+    // Remove heading markers: ### → nothing
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove link syntax: [text](url) → text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove image syntax: ![alt](url) → nothing
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
+    // Remove code blocks: ```...``` → content
+    .replace(/```[\s\S]*?```/g, (match) => match.replace(/```\w*\n?/g, '').replace(/```/g, ''))
+    // Remove inline code: `code` → code
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove horizontal rules: --- → nothing
+    .replace(/^---+$/gm, '')
+    // Remove blockquote markers: > → nothing
+    .replace(/^>\s+/gm, '')
+    // Remove list markers: - or * at start of line → nothing
+    .replace(/^[\s]*[-*+]\s+/gm, '')
+    // Remove numbered list markers: 1. → nothing
+    .replace(/^\d+\.\s+/gm, '')
+    // Trim excess whitespace
+    .trim()
+}
+
+/**
+ * Check if text contains raw Markdown formatting.
+ */
+export function hasMarkdown(text: string): boolean {
+  if (!text) return false
+  return /\*\*.+?\*\*|(?<![\w*])\*[^*\n]+\*(?![\w*])|^#{1,6}\s|^\s*[-*+]\s|^\d+\.\s|\[.+\]\(.+\)|```/.test(text)
+}
+
 export function highlight(text: string, query: string): { text: string; match: boolean }[] {
   if (!query || query.trim().length < 2) return [{ text, match: false }]
   const parts: { text: string; match: boolean }[] = []

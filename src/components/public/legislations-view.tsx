@@ -35,7 +35,7 @@ import {
   SortAsc,
   LayoutGrid,
 } from 'lucide-react'
-import { LEGAL_STATUS_LABELS, VERIFICATION_LABELS, formatDateShort } from '@/lib/constants'
+import { LEGAL_STATUS_LABELS, VERIFICATION_LABELS, formatDateShort, formatYear } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
 
 interface ListResponse {
@@ -333,7 +333,7 @@ function LegislationCard({ leg, onClick }: { leg: any; onClick: () => void }) {
             {leg.authority?.nameAr}
           </span>
           <span dir="ltr" className="article-number">
-            {leg.year ? leg.year.toLocaleString('ar-EG') : '—'}
+            {leg.year ? formatYear(leg.year) : '—'}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5 text-[10px]">

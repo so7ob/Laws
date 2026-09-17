@@ -37,7 +37,8 @@ import {
   LEGAL_STATUS_LABELS,
   VERIFICATION_LABELS,
   formatDate,
-} from '@/lib/constants'
+  formatYear,
+} from "@/lib/constants"
 import { Breadcrumb } from '@/components/common/breadcrumb'
 
 /* ============================================================
@@ -207,7 +208,7 @@ export function CompareView() {
                         <span className="truncate">{l.officialTitle}</span>
                         {l.year ? (
                           <span className="mr-2 text-xs text-muted-foreground">
-                            ({l.year.toLocaleString('ar-EG')})
+                            ({formatYear(l.year)})
                           </span>
                         ) : null}
                       </SelectItem>
@@ -247,7 +248,7 @@ export function CompareView() {
                         <span className="truncate">{l.officialTitle}</span>
                         {l.year ? (
                           <span className="mr-2 text-xs text-muted-foreground">
-                            ({l.year.toLocaleString('ar-EG')})
+                            ({formatYear(l.year)})
                           </span>
                         ) : null}
                       </SelectItem>
@@ -388,9 +389,9 @@ function ComparisonResult({
       icon: Hash,
       label: 'الرقم / السنة',
       valueA:
-        (a.number || '—') + (a.year ? ` / ${a.year.toLocaleString('ar-EG')}` : ''),
+        (a.number || '—') + (a.year ? ` / ${formatYear(a.year)}` : ''),
       valueB:
-        (b.number || '—') + (b.year ? ` / ${b.year.toLocaleString('ar-EG')}` : ''),
+        (b.number || '—') + (b.year ? ` / ${formatYear(b.year)}` : ''),
     },
     {
       icon: Building2,

@@ -35,7 +35,7 @@ import {
   BarChart3,
   GitBranch,
 } from 'lucide-react'
-import { LEGAL_STATUS_LABELS, formatDate, relativeTime } from '@/lib/constants'
+import { LEGAL_STATUS_LABELS, formatDate, relativeTime, formatYear } from '@/lib/constants'
 import { RecentlyViewed } from '@/components/public/recently-viewed'
 
 interface Stats {
@@ -369,7 +369,7 @@ export function HomeView() {
                             <Building2 className="h-3 w-3" />
                             {leg.authority?.nameAr}
                           </span>
-                          <span dir="ltr" className="article-number">{leg.year?.toLocaleString('ar-EG')}</span>
+                          <span dir="ltr" className="article-number">{formatYear(leg.year)}</span>
                         </div>
                       </div>
                     </button>

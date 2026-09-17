@@ -16,7 +16,7 @@ import {
   Milestone,
   FileText,
 } from 'lucide-react'
-import { LEGAL_STATUS_LABELS, formatDate } from '@/lib/constants'
+import { LEGAL_STATUS_LABELS, formatDate, formatYear } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
 
 interface TimelineItem {
@@ -123,7 +123,7 @@ export function TimelineView() {
                   : 'bg-muted hover:bg-primary/10 hover:text-primary border border-border'
               }`}
             >
-              {year > 0 ? year.toLocaleString('ar-EG') : 'غير محدد'}
+              {year > 0 ? formatYear(year) : 'غير محدد'}
               <span className="mr-1.5 opacity-70 article-number">({count.toLocaleString('ar-EG')})</span>
             </button>
           )
@@ -140,13 +140,13 @@ export function TimelineView() {
             <div key={year} className="relative pr-12">
               {/* Year marker */}
               <div className="absolute right-0 top-0 h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-xs shadow-md z-10">
-                {year > 0 ? year.toLocaleString('ar-EG') : '?'}
+                {year > 0 ? formatYear(year) : '?'}
               </div>
 
               {/* Year header */}
               <div className="mb-3 pb-2 border-b border-border/40">
                 <h2 className="text-lg font-bold text-secondary">
-                  سنة {year > 0 ? year.toLocaleString('ar-EG') : 'غير محددة'}
+                  سنة {year > 0 ? formatYear(year) : 'غير محددة'}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   {yearItems.length.toLocaleString('ar-EG')} تشريع

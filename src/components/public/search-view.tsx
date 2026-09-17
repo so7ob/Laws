@@ -19,7 +19,7 @@ import {
   ChevronLeft, Hash, Calendar, Building2, TrendingUp,
   Target, X, Sparkles, BarChart3, Clock, Star, SearchX,
 } from 'lucide-react'
-import { LEGAL_STATUS_LABELS, formatDateShort, highlight, relativeTime } from '@/lib/constants'
+import { LEGAL_STATUS_LABELS, formatDateShort, highlight, relativeTime, formatYear } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
 import { exportToCSV } from '@/lib/csv-export'
 import { suggestQuery, LEGAL_TERMS_DICTIONARY } from '@/lib/search-suggest'
@@ -364,7 +364,7 @@ export function SearchView() {
                   <span className="text-xs text-muted-foreground">التوزيع حسب السنة:</span>
                   {data.aggregations.years.slice(0, 10).map((y: any) => (
                     <Badge key={y.year} variant="outline" className="article-number">
-                      {y.year?.toLocaleString('ar-EG')}
+                      {formatYear(y.year)}
                       <span className="text-[10px] text-muted-foreground mr-1">({y._count?._all || y.count})</span>
                     </Badge>
                   ))}
@@ -451,7 +451,7 @@ export function SearchView() {
                     <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{leg.authority?.nameAr}</span>
                       <span>•</span>
-                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{leg.year?.toLocaleString('ar-EG')}</span>
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatYear(leg.year)}</span>
                       <span>•</span>
                       <span className="flex items-center gap-1"><FileText className="h-3 w-3" />{leg._count?.articles || leg.subjects?.length || 0} مادة</span>
                     </div>
@@ -490,7 +490,7 @@ export function SearchView() {
                     ))}
                   </p>
                   <div className="text-[11px] text-muted-foreground mt-2">
-                    {hit.legislation.type?.nameAr} • {hit.legislation.year?.toLocaleString('ar-EG')}
+                    {hit.legislation.type?.nameAr} • {formatYear(hit.legislation.year)}
                   </div>
                 </CardContent>
               </Card>

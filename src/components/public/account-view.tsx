@@ -73,6 +73,7 @@ import {
   formatDate,
   relativeTime,
   truncate,
+  formatYear,
 } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
 
@@ -382,7 +383,7 @@ function FavoritesTab() {
                 {leg?.year && (
                   <div className="flex items-center gap-1.5">
                     <Calendar className="size-3.5" />
-                    <span>سنة الإصدار: {leg.year.toLocaleString('ar-EG')}</span>
+                    <span>سنة الإصدار: {formatYear(leg.year)}</span>
                   </div>
                 )}
                 {leg?.authority?.nameAr && (
@@ -764,7 +765,7 @@ function NotesTab() {
                     {legislations.map((l) => (
                       <SelectItem key={l.id} value={l.id}>
                         {l.officialTitle}
-                        {l.year ? ` (${l.year.toLocaleString('ar-EG')})` : ''}
+                        {l.year ? ` (${formatYear(l.year)})` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -832,7 +833,7 @@ function NotesTab() {
                           </span>
                           {leg.year && (
                             <span className="text-muted-foreground">
-                              ({leg.year.toLocaleString('ar-EG')})
+                              ({formatYear(leg.year)})
                             </span>
                           )}
                           <ExternalLink className="size-3" />
@@ -1075,7 +1076,7 @@ function ParticipationsTab() {
                     {legislations.map((l) => (
                       <SelectItem key={l.id} value={l.id}>
                         {l.officialTitle}
-                        {l.year ? ` (${l.year.toLocaleString('ar-EG')})` : ''}
+                        {l.year ? ` (${formatYear(l.year)})` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

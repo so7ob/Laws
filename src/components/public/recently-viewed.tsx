@@ -5,8 +5,8 @@ import { useAppStore } from '@/store/app-store'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Clock, X, ChevronLeft, History } from 'lucide-react'
-import { relativeTime } from '@/lib/constants'
+import { Clock, X, History } from 'lucide-react'
+import { relativeTime, formatYear } from '@/lib/constants'
 
 interface RecentItem {
   slug: string
@@ -34,6 +34,7 @@ export function RecentlyViewed() {
 
   function handleRemove(slug: string, e: React.MouseEvent) {
     e.stopPropagation()
+    e.preventDefault()
     const updated = items.filter((i) => i.slug !== slug)
     setItems(updated)
     try {
@@ -69,10 +70,18 @@ export function RecentlyViewed() {
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {items.slice(0, 6).map((item) => (
-            <button
+            <div
               key={item.slug}
               onClick={() => openLegislation(item.slug)}
-              className="group relative flex items-center gap-3 rounded-lg border border-border/60 bg-card p-3 hover:border-primary/40 hover:shadow-sm card-lift text-right transition-all"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  openLegislation(item.slug)
+                }
+              }}
+              className="group relative flex items-center gap-3 rounded-lg border border-border/60 bg-card p-3 hover:border-primary/40 hover:shadow-sm card-lift text-right transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <div className="h-9 w-9 rounded-md bg-gradient-to-br from-primary/15 to-secondary/15 flex items-center justify-center shrink-0">
                 <Clock className="h-4 w-4 text-primary" />
@@ -83,19 +92,20 @@ export function RecentlyViewed() {
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground mt-0.5">
                   {item.type && <Badge variant="outline" className="text-[9px] py-0 px-1.5">{item.type}</Badge>}
-                  {item.year && <span className="article-number">{item.year.toLocaleString('ar-EG')}</span>}
+                  {item.year && <span className="article-number">{formatYear(item.year)}</span>}
                   <span>•</span>
                   <span>{relativeTime(item.viewedAt)}</span>
                 </div>
               </div>
               <button
                 onClick={(e) => handleRemove(item.slug, e)}
-                className="absolute top-1 left-1 h-6 w-6 rounded-full bg-background/80 hover:bg-destructive/10 hover:text-destructive flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
-                aria-label="إزالة"
+                className="absolute top-1 left-1 h-6 w-6 rounded-full bg-background/80 hover:bg-destructive/10 hover:text-destructive flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-10"
+                aria-label="إزالة من القائمة"
+                title="إزالة"
               >
                 <X className="h-3 w-3" />
               </button>
-            </button>
+            </div>
           ))}
         </div>
       </CardContent>

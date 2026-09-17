@@ -64,6 +64,8 @@ import {
   formatDateShort,
   CHANGE_TYPE_LABELS,
   highlight,
+  formatYear,
+  stripMarkdown,
 } from '@/lib/constants'
 import { diffTexts, mergeSegments, getDiffStats } from '@/lib/diff'
 import { toast } from 'sonner'
@@ -263,7 +265,7 @@ export function LegislationDetailView() {
                 {data.officialTitle}
               </h1>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                <InfoBox icon={Hash} label="الرقم / السنة" value={data.number && data.year ? `${data.number} / ${data.year.toLocaleString('ar-EG')}` : '—'} />
+                <InfoBox icon={Hash} label="الرقم / السنة" value={data.number && data.year ? `${data.number} / ${formatYear(data.year)}` : '—'} />
                 <InfoBox icon={Building2} label="جهة الإصدار" value={data.authority?.nameAr || '—'} />
                 <InfoBox icon={Calendar} label="تاريخ الإصدار" value={formatDate(data.issueDate)} />
                 <InfoBox icon={CheckCircle2} label="تاريخ النفاذ" value={formatDate(data.effectiveDate)} />
@@ -492,7 +494,7 @@ function OverviewTab({ data }: { data: LegislationDetail }) {
               </CardTitle>
             </CardHeader>
             <CardContent dir="rtl">
-              <p className="legal-text leading-loose text-base" dir="rtl">{data.preamble}</p>
+              <p className="legal-text leading-loose text-base" dir="rtl">{stripMarkdown(data.preamble || "")}</p>
             </CardContent>
           </Card>
         )}
@@ -520,7 +522,7 @@ function OverviewTab({ data }: { data: LegislationDetail }) {
                       </Badge>
                     )}
                   </div>
-                  <p className="legal-text text-sm">{v?.textContent || '—'}</p>
+                  <p className="legal-text text-sm">{stripMarkdown(v?.textContent || '—')}</p>
                 </div>
               )
             })}
@@ -721,7 +723,7 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
       <div className="space-y-3">
         {filtered.map((a, idx) => {
           const v = a.versions?.find((ver: any) => ver.isCurrent) || a.versions?.[0]
-          const parts = articleSearch ? highlight(v?.textContent || '', articleSearch) : null
+          const parts = articleSearch ? highlight(stripMarkdown(v?.textContent || ''), articleSearch) : null
           return (
             <Card key={a.id} id={`article-${a.id}`} className="border-border/60 hover:border-primary/30 transition-colors group" dir="rtl">
               <CardContent className="p-5" dir="rtl">
@@ -757,7 +759,7 @@ function ArticlesTab({ data, articleSearch, setArticleSearch }: { data: Legislat
                         ))}
                       </p>
                     ) : (
-                      <p className="legal-text text-sm leading-loose">{v?.textContent || '—'}</p>
+                      <p className="legal-text text-sm leading-loose">{stripMarkdown(v?.textContent || '—')}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-1">
@@ -943,7 +945,7 @@ function ArticleVersionsDialog({ article, onClose }: { article: any; onClose: ()
                     )}
                   </div>
                   <div className="legal-text text-sm bg-muted/30 rounded-md p-3 leading-loose">
-                    {v.textContent || '—'}
+                    {stripMarkdown(v.textContent || '—')}
                   </div>
                 </div>
               )
@@ -1233,7 +1235,7 @@ function AmendmentsTab({ slug }: { slug: string }) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
                     <Badge className="bg-primary text-primary-foreground">
-                      {doc.year?.toLocaleString('ar-EG')}
+                      {formatYear(doc.year)}
                     </Badge>
                     <Badge variant="outline" className={doc.status === 'applied' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}>
                       {doc.status === 'applied' ? 'مُطبَّق' : doc.status === 'draft' ? 'مسودة' : doc.status === 'in_review' ? 'قيد المراجعة' : doc.status}
@@ -1483,7 +1485,7 @@ function RelationsTab({ slug }: { slug: string }) {
                         {r.toLegislation.officialTitle}
                       </button>
                       <div className="text-[11px] text-muted-foreground">
-                        {r.toLegislation.type?.nameAr} • {r.toLegislation.year?.toLocaleString('ar-EG')}
+                        {r.toLegislation.type?.nameAr} • {formatYear(r.toLegislation.year)}
                       </div>
                     </div>
                     {r.evidence && (
@@ -1522,7 +1524,7 @@ function RelationsTab({ slug }: { slug: string }) {
                         {r.fromLegislation.officialTitle}
                       </button>
                       <div className="text-[11px] text-muted-foreground">
-                        {r.fromLegislation.type?.nameAr} • {r.fromLegislation.year?.toLocaleString('ar-EG')}
+                        {r.fromLegislation.type?.nameAr} • {formatYear(r.fromLegislation.year)}
                       </div>
                     </div>
                   </CardContent>

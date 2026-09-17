@@ -1,8 +1,7 @@
 # Worklog - منصة التشريعات اليمنية (Yemeni Legislation Platform)
 
 ## Project Overview
-Building a comprehensive Yemeni Legislation Platform using Next.js 16 + Prisma + shadcn/ui.
-- Next.js 16 with App Router (single `/` route, internal state navigation)
+- Next.js 16 with App Router (single `/` route, internal Zustand state navigation)
 - Prisma + SQLite
 - shadcn/ui components
 - RTL Arabic with Cairo font
@@ -10,93 +9,100 @@ Building a comprehensive Yemeni Legislation Platform using Next.js 16 + Prisma +
 
 ---
 
-## Phases 1-10 Summary (COMPLETED)
-
-### Phase 1: Initial Foundation
-### Phase 2: Enhancement Round (account, compare, theme toggle)
-### Phase 3: Advanced Features (dictionary, corrections, version comparison, keyboard shortcuts)
-### Phase 4: Navigation & Historical Views (breadcrumb, date picker, article sidebar, print)
-### Phase 5: Functional Historical Views (API date picker, scroll spy, recently viewed, CSV export)
-### Phase 6: Visual Diff, Stats & Polish (word-level diff, stats page, enhanced footer, search history)
-### Phase 7: Feedback, Settings & Search (rating system, settings tab, favorite from search)
-### Phase 8: Timeline View & Page Transitions (chronological timeline, page transitions)
-### Phase 9: Share Dialog, Reading Time & Visual Polish (share, reading time, copy article, CSS utilities)
-### Phase 10: Citation Generator & Search Suggestions (citation, did-you-mean, Arabic normalization)
-
----
-
-## Phase 11 Status (Glossary & FAQ - COMPLETED)
+## Phase 12 Status (Bug Fixes from Interactive Review - IN PROGRESS)
 
 ### Current Assessment
-Phase 10 left the platform with citation generator and search suggestions. Phase 11 focused on:
-1. **Legal Glossary** (معجم المصطلحات القانونية) - 38 legal terms with definitions and categories
-2. **FAQ Page** (الأسئلة الشائعة) - 21 frequently asked questions with accordion
-3. **Navigation integration** - both views added to header, footer, breadcrumb, store, page router
+Based on interactive review dated 17 September 2026, the following issues were identified and fixes were applied:
 
-### Goals / Completed Modifications / Verification Results
+### Fixes Completed
 
-#### 1. Legal Glossary View
-- **Component**: `src/components/public/glossary-view.tsx`
-  - 38 legal terms with definitions, categories, and synonyms
-  - 9 categories: دستوري، مدني، جنائي، تجاري، إداري، عمالي، أحوال شخصية، إجرائي
-  - Category filter chips with counts and icons
-  - Search input for filtering terms
-  - Terms grouped by first letter with gradient letter markers
-  - Cards with term title, category badge (color-coded), definition, synonyms
-  - Hover effects: card lift, title color change, staggered animations
-  - Empty state with BookOpen icon
-- **Terms include**: الدستور، السيادة، العقد، الجريمة، التاجر، القرار الإداري، عقد العمل، الزواج، الاختصاص، and more
-- **Verification**: agent-browser confirms "معجم المصطلحات القانونية" heading, 38 terms, category chips
+#### F01 (P0) — Intermittent Runtime Crash / Dev Error Screen
+- **Root cause 1**: CSS parsing errors in `globals.css` using invalid `var(--primary/10)` syntax (CSS custom properties don't support `/` division). This caused 500 errors on page load.
+- **Root cause 2**: Missing `formatYear` import in `home-view.tsx` causing `ReferenceError` at runtime, crashing client-side rendering.
+- **Fix**: 
+  - Replaced all `var(--primary/N)` and `var(--secondary/N)` with `rgba(172, 68, 89, N/100)` and `rgba(52, 75, 97, N/100)`
+  - Added `formatYear` import to `home-view.tsx` and `timeline-view.tsx`
+- **Verification**: Server returns HTTP 200, page loads without "Application error" screen, no console errors
 
-#### 2. FAQ View
-- **Component**: `src/components/public/faq-view.tsx`
-  - 21 frequently asked questions with answers
-  - 6 categories: عام، بحث، تشريعات، حساب الباحث، تقني
-  - Category filter chips with counts
-  - Search input for filtering questions
-  - Accordion interface (expand/collapse) with numbered badges
-  - Active accordion item badge changes to primary color
-  - Contact prompt card at bottom
-  - Empty state with HelpCircle icon
-- **Questions cover**: platform overview, search tips, legislation features, account features, technical questions
-- **Verification**: agent-browser confirms "الأسئلة الشائعة" heading, 21 questions, accordion
+#### F02 (P1) — Button-in-Button Hydration Warning
+- **Root cause**: `RecentlyViewed` component had a `<button>` (card) containing another `<button>` (remove), which is invalid HTML and causes React hydration warning.
+- **Fix**: Changed outer `<button>` to `<div role="button" tabIndex={0}>` with `onKeyDown` handler for Enter/Space keys, proper `focus-visible` ring, and `aria-label` on remove button.
+- **Verification**: No hydration warnings in console
 
-#### 3. Navigation Integration
-- **Store**: Added 'glossary' and 'faq' to View type union
-- **Page router**: Added cases for glossary and FAQ in ViewRouter
-- **Header nav**: Added both to المنظومة menu with BookOpen and HelpCircle icons
-- **Footer**: Added to quick links section
-- **Breadcrumb**: Added to VIEW_LABELS with appropriate icons
+#### F11 (P2) — Raw Markdown in Legal Text
+- **Root cause**: Article text content stored with Markdown formatting (`**bold**`) displayed raw to users.
+- **Fix**: Added `stripMarkdown()` function in `src/lib/constants.ts` that removes:
+  - Bold markers: `**text**` → `text`
+  - Italic markers: `*text*` → `text`
+  - Headings: `###` → nothing
+  - Links, images, code blocks, blockquotes, list markers
+  - Applied to all `textContent` and `preamble` displays in legislation-detail-view.tsx
+- **Verification**: 0 occurrences of `**` in rendered page
 
-### Verification Results
-- ✅ Lint passes with zero errors
-- ✅ agent-browser tests confirm:
-  - Glossary view loads with 38 terms, 9 categories, letter grouping
-  - FAQ view loads with 21 questions, 6 categories, accordion interface
-  - No console errors or page errors
-- ✅ VLM assessment: 8/10 - "clean, professional, highly usable... excellent use of whitespace... color-coded tags... intuitive navigation"
-- ✅ Screenshots saved:
-  - `glossary-view.png` (legal glossary with categories)
-  - `faq-view.png` (FAQ with accordion)
+#### F13 (P3) — Year Formatting with Thousands Separator
+- **Root cause**: Years formatted with `toLocaleString('ar-EG')` which adds Arabic thousands separator `٬` (e.g., `٢٬٠٠١` instead of `٢٠٠١`).
+- **Fix**: Added `formatYear()` function with `useGrouping: false`, replaced all year formatting calls across 8 component files.
+- **Verification**: Years display as `٢٠٠٩` (not `٢٬٠٠٩`)
+
+### Remaining Issues (from F01-F14, not yet addressed)
+
+#### F03 (P1) — Admin Operations Show "قريبًا"
+- Add legislation form, amendment document form, and policy exceptions management need real implementation
+- Currently show toast "قريبًا" instead of working forms
+
+#### F04 (P1) — URL Stays at /
+- No routing for legislation detail pages, share links point to home page
+- Need URL-based routing or at least proper share links
+
+#### F05 (P1) — Version History Dialog Missing Old Versions
+- Article 5 shows only version 2 in the version dialog, but version 1 is accessible via date picker
+- Need to show all versions in the dialog
+
+#### F06 (P1) — Effective Date Mixed with Legislation Metadata
+- Selecting a date for historical view changes the "effective date" field in the header
+- Need to separate "view as of date" from legislation metadata
+
+#### F07 (P2) — Amendment Count Inconsistency
+- Header shows 0 amendments but amendments tab shows 1 document
+- Count logic needs to be fixed
+
+#### F08 (P1) — Attachment Download Not Working
+- Download button for map attachment doesn't produce a file
+- Need real file handling
+
+#### F09 (P1) — "مُتحقق" Verification Level Inconsistent
+- Shows "verified" but no sources are recorded
+- Need to link verification to actual sources
+
+#### F10 (P1) — Import File Types Incomplete
+- Missing Markdown, XLSX, PNG, JPEG options
+- Single file input doesn't support TXT+PDF combined
+
+#### F12 (P2) — Untranslated UI Elements
+- Calendar shows English month/day names
+- Some dialog close buttons say "Close"
+- Filter chips show internal format like `type: constitution`
+
+#### F14 (P1) — Admin Access Without Authentication
+- Admin panel accessible without login in demo mode
+- Need to document demo vs production behavior
 
 ---
 
 ## Unresolved Issues / Risks
-1. **Dev server memory**: ~2GB under load. Not a production concern.
+1. **Dev server memory**: ~2GB under load, causes intermittent crashes. Using `NODE_OPTIONS=--max-old-space-size=1536`.
 2. **Original spec vs. stack adaptation**: Vite/NestJS/MariaDB → Next.js/Prisma/SQLite.
 3. **Simplified features**: OCR, real auth, PDF.js viewer use mock data.
 4. **Admin API security**: All admin endpoints are currently open.
 5. **localStorage dependency**: Recently Viewed, Search History, Settings depend on localStorage.
-6. **Glossary terms are static**: Not stored in database (could be moved to DB in future).
 
 ## Priority Recommendations for Next Phase
-1. **Add user authentication** (NextAuth.js) to secure admin endpoints
-2. **Add Arabic OCR** via Tesseract for PDF/image imports
-3. **Implement full-text search** via SQLite FTS5
-4. **Add real file upload** for sources
-5. **Add WebSocket notifications** for long-running import tasks
-6. **Add export to PDF/DOCX** for legislation detail
-7. **Add visual diff for legislation comparison** (not just articles)
-8. **Add legislation rating aggregation** (show average rating on cards)
-9. **Add bookmark folders** for organizing favorites
-10. **Add notification center** for feedback responses
+1. Implement F03: Real admin forms for legislation, amendment, and policy exceptions
+2. Implement F04: URL-based routing for shareable links
+3. Implement F05+F06: Fix version history and effective date separation
+4. Implement F07: Fix amendment count logic
+5. Implement F08: Real file download for attachments
+6. Implement F09: Link verification level to actual sources
+7. Implement F10: Complete import file types
+8. Implement F12: Arabic calendar and UI translation
+9. Implement F14: Document demo mode and add authentication
