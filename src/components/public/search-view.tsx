@@ -21,6 +21,8 @@ import {
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDateShort, highlight } from '@/lib/constants'
 import { Breadcrumb } from '@/components/common/breadcrumb'
+import { exportToCSV } from '@/lib/csv-export'
+import { toast } from 'sonner'
 
 interface SearchResponse {
   items: any[]
@@ -236,12 +238,51 @@ export function SearchView() {
 
       {data && !loading && (
         <>
-          {/* Aggregations bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <AggCard label="التشريعات" value={data.total} active={activeHit === 'legislations'} onClick={() => setActiveHit('legislations')} icon={Scale} />
-            <AggCard label="المواد" value={data.aggregations.articleHitCount} active={activeHit === 'articles'} onClick={() => setActiveHit('articles')} icon={FileText} />
-            <AggCard label="الملاحق" value={data.aggregations.attachmentHitCount} active={activeHit === 'attachments'} onClick={() => setActiveHit('attachments')} icon={LayoutGrid} />
-            <AggCard label="إجمالي النتائج" value={data.total + data.aggregations.articleHitCount + data.aggregations.attachmentHitCount} icon={BarChart3} />
+          {/* Aggregations bar + Export */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4 items-stretch">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
+              <AggCard label="التشريعات" value={data.total} active={activeHit === 'legislations'} onClick={() => setActiveHit('legislations')} icon={Scale} />
+              <AggCard label="المواد" value={data.aggregations.articleHitCount} active={activeHit === 'articles'} onClick={() => setActiveHit('articles')} icon={FileText} />
+              <AggCard label="الملاحق" value={data.aggregations.attachmentHitCount} active={activeHit === 'attachments'} onClick={() => setActiveHit('attachments')} icon={LayoutGrid} />
+              <AggCard label="إجمالي النتائج" value={data.total + data.aggregations.articleHitCount + data.aggregations.attachmentHitCount} icon={BarChart3} />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-auto py-3 shrink-0"
+              onClick={() => {
+                const headers = ['النوع', 'العنوان', 'الرقم', 'السنة', 'الجهة', 'الحالة', 'الرابط']
+                const rows: (string | number | null)[][] = []
+                data.items.forEach((leg: any) => {
+                  const status = LEGAL_STATUS_LABELS[leg.legalStatus] || LEGAL_STATUS_LABELS.active
+                  rows.push([
+                    leg.type?.nameAr || '',
+                    leg.officialTitle || '',
+                    leg.number || '',
+                    leg.year || '',
+                    leg.authority?.nameAr || '',
+                    status.label,
+                    `/legislations/${leg.slug}`,
+                  ])
+                })
+                data.articleHits.forEach((hit: any) => {
+                  rows.push([
+                    'مادة',
+                    `مادة (${hit.articleNumber}) - ${hit.legislation?.shortTitle || hit.legislation?.officialTitle || ''}`,
+                    '',
+                    hit.legislation?.year || '',
+                    '',
+                    '',
+                    `/legislations/${hit.legislation?.slug}#article-${hit.articleId}`,
+                  ])
+                })
+                exportToCSV(`search-results-${Date.now()}.csv`, headers, rows)
+                toast.success('تم تصدير النتائج')
+              }}
+            >
+              <Download className="h-4 w-4 ml-1.5" />
+              تصدير CSV
+            </Button>
           </div>
 
           {/* Year aggregation */}

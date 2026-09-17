@@ -34,6 +34,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import { LEGAL_STATUS_LABELS, formatDate, relativeTime } from '@/lib/constants'
+import { RecentlyViewed } from '@/components/public/recently-viewed'
 
 interface Stats {
   counts: {

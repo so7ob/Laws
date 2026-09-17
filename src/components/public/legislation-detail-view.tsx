@@ -118,7 +118,6 @@ export function LegislationDetailView() {
   const [datePickerOpen, setDatePickerOpen] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [activeArticleId, setActiveArticleId] = useState<string | null>(null)
-  const [recentlyViewed, setRecentlyViewed] = useState<any[]>([])
 
   useEffect(() => {
     if (!slug) return

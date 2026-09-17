@@ -60,120 +60,131 @@ Adapting the original spec (which asked for Vite/NestJS/MariaDB) to the availabl
 
 ## Phase 4 Status (Navigation, Historical Views & Polish - COMPLETED)
 
-### Current Assessment
-Phase 3 left the platform stable with advanced features. Phase 4 focused on:
-1. **Wire Breadcrumb component** into all sub-page views (legislation detail, search, account, compare, news, public pages, legislations list)
-2. **Add "Effective at date" picker** to legislation detail for viewing historical versions
+### What was built:
+1. **Wire Breadcrumb component** into all sub-page views
+2. **Add "Effective at date" picker** to legislation detail (visual only)
 3. **Add Article Navigation Sidebar** (sticky TOC) to the Articles tab
-4. **Enhanced print-optimized stylesheet** for legislation detail (legal documents)
-5. **Additional seed data**: 6 quality reports, 15 audit logs, import operations
-6. **Functional action buttons**: Copy link (clipboard), Add to favorites (API), Report (toast)
+4. **Enhanced print-optimized stylesheet** for legislation detail
+5. **Functional action buttons**: Copy link, Add to favorites, Report
+6. **Additional seed data**: 6 quality reports, 15 audit logs, import operations
+
+### Key artifacts:
+- Breadcrumb integrated into 7 views (legislation detail, legislations, search, account, compare, news, public pages)
+- Effective date picker with Calendar popover
+- Article Navigation Sidebar with scroll-to-article
+- Enhanced print stylesheet
+- Functional action buttons with toast notifications
+
+---
+
+## Phase 5 Status (Functional Historical Views & Researcher Tools - COMPLETED)
+
+### Current Assessment
+Phase 4 left the platform stable with visual features. Phase 5 focused on making features **functional** rather than just visual:
+1. **Wire effective date picker to API**: Actually filter article versions by selected date
+2. **Add active article tracking** in the sidebar (IntersectionObserver-based scroll spy)
+3. **Add "Recently Viewed" section** on home page (localStorage-based)
+4. **Add CSV export** for search results (with Arabic BOM for Excel)
+5. **Track recently viewed legislation** when visiting legislation detail
 
 ### Goals / Completed Modifications / Verification Results
 
-#### 1. Breadcrumb Integration (7 views)
-- **Component**: `src/components/common/breadcrumb.tsx` (created in Phase 3)
-- **Wired into**:
-  - `legislation-detail-view.tsx` - with custom crumb showing legislation short title
-  - `legislations-view.tsx` - with view label
-  - `search-view.tsx` - with view label
-  - `account-view.tsx` - with view label
-  - `compare-view.tsx` - with view label
-  - `content-views.tsx` (NewsView, NewsDetailView, PublicPageView) - with custom crumbs
-- **Behavior**: Shows "الرئيسية → [View Label] → [Custom Crumb]", clickable parent crumbs, last crumb highlighted, hidden on home view
-- **Verification**: agent-browser confirms `navigation "مسار التنقل"` present on all sub-page views
+#### 1. Functional Effective Date Picker (API Integration)
+- **API**: Updated `/api/legislations/[slug]/route.ts` to accept `?effectiveDate=` query parameter
+  - When `effectiveDate` is provided, finds the article version that was active on that date
+  - Query: `effectiveFrom <= date AND (effectiveTo IS NULL OR effectiveTo > date)`
+  - Returns `isHistoricalView: true` and `effectiveDate` in the response
+- **Frontend**: Updated `legislation-detail-view.tsx` useEffect to:
+  - Pass `effectiveDate` as query parameter to the API
+  - Re-fetch data when `effectiveDate` changes (added to dependency array)
+  - Track recently viewed legislation in localStorage
+- **Verification**: API returns correct versions for the selected date; toast notification confirms date selection
 
-#### 2. Effective Date Picker (Legislation Detail)
-- **Component**: Added to `legislation-detail-view.tsx` header card
-- **Implementation**: Popover with Calendar primitive (shadcn/ui)
-- **Features**:
-  - Button shows "عرض النص الحالي" by default, changes to "النص النافذ في [date]" when a date is selected
-  - Calendar popover with title and description
-  - "إعادة التعيين" (Reset) button to clear the date
-  - "عرض زمني" badge appears when a date is selected
-  - Toast notification on date selection
-- **Verification**: agent-browser confirms calendar popover opens with month grid and selectable dates; VLM rated it "visible and usable"
+#### 2. Active Article Tracking (Scroll Spy)
+- **Component**: Added `IntersectionObserver` to `ArticlesTab` in `legislation-detail-view.tsx`
+- **Implementation**:
+  - Observes all article cards (`#article-{id}` elements)
+  - `rootMargin: '-80px 0px -60% 0px'` to trigger when article is near the top
+  - Sets `activeArticleId` state when an article enters the viewport
+  - Highlights the active article in the sidebar with:
+    - `bg-primary/10` background
+    - `text-primary` font color
+    - Solid `bg-primary` badge (vs muted badge for inactive)
+    - Animated pulse dot indicator
+  - Cleans up observer on unmount
+- **Verification**: When scrolling through articles, the sidebar automatically highlights the current article
 
-#### 3. Article Navigation Sidebar (Articles Tab)
-- **Component**: Added to ArticlesTab in `legislation-detail-view.tsx`
-- **Layout**: 2-column grid on large screens (`lg:grid-cols-[260px,1fr]`), single column on mobile
-- **Features**:
-  - Sticky sidebar (`sticky top-24`) with max height
-  - Card titled "قائمة المواد" with ListOrdered icon
-  - ScrollArea with article links (numbered badges)
-  - Click to smooth-scroll to article (`scrollIntoView({ behavior: 'smooth', block: 'center' })`)
-  - Hover effects: badge bg changes, text color transitions
-- **Verification**: agent-browser confirms sidebar shows with 10+ article links; VLM rated layout 8/10 with "highly useful" sidebar
+#### 3. Recently Viewed Section (Home Page)
+- **Component**: `src/components/public/recently-viewed.tsx`
+  - Reads from `localStorage` key `recentlyViewed`
+  - Shows up to 6 recently viewed legislations
+  - Each card: legislation title, type badge, year, relative time
+  - Click to open legislation detail
+  - Remove button (X) per item
+  - "مسح الكل" (Clear all) button
+  - Only renders after mount (avoids hydration mismatch)
+  - Hidden when no items exist
+- **Integration**: Added to home page between Quick Links and Featured Quote sections
+- **Tracking**: Legislation detail view saves to localStorage on each visit (slug, title, type, year, viewedAt)
+- **Verification**: After visiting a legislation detail and returning home, the "شوهد مؤخرًا" section appears with the visited legislation
 
-#### 4. Enhanced Print Stylesheet
-- **File**: `src/app/globals.css` - significantly expanded `@media print` block
-- **Features**:
-  - Hides header, footer, nav, skip-link
-  - Resets colors (white background, black text)
-  - Removes shadows, animations, transitions
-  - Legal text: `page-break-inside: avoid`
-  - Cards: clean 1px solid borders
-  - Headers: `page-break-after: avoid`
-  - Badges: black border, white background for print visibility
-  - Links: show URL after link text
-  - Force background colors to print (`print-color-adjust: exact`)
-  - Print-only class (`.print-only`) for elements that should only appear in print
+#### 4. CSV Export for Search Results
+- **Utility**: `src/lib/csv-export.ts`
+  - `exportToCSV(filename, headers, rows)` function
+  - Adds BOM (`\uFEFF`) for Arabic text support in Excel
+  - Escapes commas, quotes, and newlines properly
+  - Creates blob and triggers download
+- **Integration**: Added "تصدير CSV" button to search results in `search-view.tsx`
+  - Exports both legislation hits and article hits
+  - Columns: النوع، العنوان، الرقم، السنة، الجهة، الحالة، الرابط
+  - Toast notification on success
+- **Verification**: VLM confirmed "تصدير CSV" button is visible and the layout is clean
 
-#### 5. Functional Action Buttons (Legislation Detail)
-- **Copy Link**: Uses `navigator.clipboard.writeText()`, shows "تم النسخ" with Check icon for 2 seconds, toast notification
-- **Add to Favorites**: POST to `/api/account/favorites`, shows toast on success/duplicate
-- **Report**: Toast info directing to account → participations
-- **Print**: `window.print()` (now with enhanced print stylesheet)
-
-#### 6. Additional Seed Data
-- **File**: `prisma/seed/admin-data.ts`
-- **Quality Reports**: 6 reports with varied types (missing_source, incomplete_dates, unreviewed_ocr, broken_reference, missing_publish_data, unlinked_amendment) and severities (info, warning, error, critical) and statuses (open, processing, resolved, ignored)
-- **Audit Logs**: 15 logs with varied actions (create, edit, review, publish, delete, approve) and resources (legislation, role, user, amendment, attachment, policy, source, import, correction, settings)
-- **Import Operations**: 6 imports with varied statuses (completed, ready_review, extracting, uploaded, failed) and file types (txt, pdf, docx, xlsx)
-
-#### 7. VLM Visual Quality Assessment
-- **Articles tab with sidebar**: 8/10 - "Sidebar is highly useful... Excellent readability with clean, minimalist design"
-- **Date picker popover**: "Visible and usable... displayed as a popover with selectable dates"
-- **Home page (Phase 4)**: 8/10 - "Professional & Trustworthy Aesthetic... Excellent Information Architecture"
+#### 5. Recently Viewed Tracking (Legislation Detail)
+- **Implementation**: In `legislation-detail-view.tsx` useEffect
+  - On successful data fetch, saves to localStorage:
+    ```js
+    { slug, title, type, year, viewedAt }
+    ```
+  - Filters out duplicate entries (same slug)
+  - Keeps most recent 6 items
+  - Wrapped in try/catch for SSR safety
 
 ### Verification Results
 - ✅ Lint passes with zero errors
-- ✅ All API routes return 200
+- ✅ All API routes return 200 (including with `effectiveDate` parameter)
 - ✅ agent-browser tests confirm:
-  - Breadcrumb navigation present on all sub-page views
-  - Effective date picker opens calendar popover
-  - Article navigation sidebar shows with clickable article links
-  - All 13 admin sections load without errors
-  - Reports section loads with seeded data
-  - Audit section loads with seeded data
+  - Effective date picker passes date to API and re-fetches data
+  - localStorage tracks recently viewed legislation
+  - "شوهد مؤخرًا" section appears on home page after viewing legislation
+  - CSV export button visible on search results page
+  - Active article tracking highlights current article in sidebar
+- ✅ VLM assessment:
+  - Search results page: "Yes, search results are visible... Yes, there is a CSV export button... Yes, the layout is clean"
 - ✅ No console errors or page errors
 - ✅ Screenshots saved:
-  - `articles-with-sidebar.png` (articles tab with navigation sidebar)
-  - `date-picker.png` (date picker closed)
-  - `date-picker-open.png` (calendar popover open)
-  - `detail-with-sidebar.png` (legislation detail)
-  - `search-breadcrumb.png` (search with breadcrumb)
-  - `home-phase4.png` (home page after phase 4)
+  - `search-csv-export.png` (search results with CSV button)
+  - `home-recently-viewed.png` (home with recently viewed section)
+  - `active-article-tracking.png` (articles tab with scroll spy)
 
 ---
 
 ## Unresolved Issues / Risks
-1. **Dev server memory**: Next.js 16 + Turbopack consumes ~1.6GB memory under load. Using `NODE_OPTIONS=--max-old-space-size=2048`. Not a production concern.
+1. **Dev server memory**: Next.js 16 + Turbopack consumes ~1.8GB memory under load. Using `NODE_OPTIONS=--max-old-space-size=2048`. Not a production concern.
 2. **Original spec vs. stack adaptation**: Vite/NestJS/MariaDB → Next.js/Prisma/SQLite per project constraints. All explicit functional requirements implemented.
 3. **Simplified features**: OCR, real auth, PDF.js viewer use mock data (backend hooks exist).
 4. **SQLite + Prisma limitations**: Implicit many-to-many replaced with explicit join tables.
 5. **Admin API security**: All admin endpoints are currently open (no auth enforcement). NextAuth.js integration recommended for production.
-6. **VLM feedback on spacing**: Some sections could benefit from more whitespace. Improved across phases but could be further refined.
-7. **Effective date picker is visual-only**: Selecting a date doesn't yet filter article versions (would require API changes to pass `effectiveDate` parameter).
+6. **localStorage dependency**: Recently Viewed feature depends on localStorage; not available in SSR (handled with mounted check).
 
 ## Priority Recommendations for Next Phase
-1. **Wire effective date picker to API**: Pass `effectiveDate` to `/api/legislations/[slug]` to return the correct version of each article based on the selected date
-2. **Add user authentication** (NextAuth.js) to secure admin endpoints and personalize the account panel
-3. **Add Arabic OCR** via Tesseract for PDF/image imports
-4. **Implement full-text search** via SQLite FTS5 for better Arabic search performance
-5. **Add real file upload** for sources (currently mocked)
-6. **Add WebSocket notifications** for long-running import tasks
-7. **Further styling refinements**: More whitespace in dense sections per VLM feedback
-8. **Add export to PDF/DOCX** for legislation detail
-9. **Add active article tracking** in the sidebar (highlight the article currently in view)
-10. **Add "Recently Viewed" section** on home page for returning users
+1. **Add user authentication** (NextAuth.js) to secure admin endpoints and personalize the account panel
+2. **Add Arabic OCR** via Tesseract for PDF/image imports
+3. **Implement full-text search** via SQLite FTS5 for better Arabic search performance
+4. **Add real file upload** for sources (currently mocked)
+5. **Add WebSocket notifications** for long-running import tasks
+6. **Further styling refinements**: More whitespace in dense sections, bolder CTAs
+7. **Add export to PDF/DOCX** for legislation detail (beyond print stylesheet)
+8. **Add "Recently Viewed" clearing option** in account settings
+9. **Add search history** tracking (beyond saved searches)
+10. **Add visual diff highlighting** for article version comparison (word-level diff)
