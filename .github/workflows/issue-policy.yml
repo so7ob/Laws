@@ -1,0 +1,47 @@
+name: Issue & Branch Policy
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  check-branch:
+    name: Verify branch naming and issue link
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check branch name format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const pattern = /^(feat|fix|refactor|docs|test|chore|ci)\/(\d+)-.+/;
+            if (!pattern.test(branch)) {
+              core.setFailed(`Branch name "${branch}" does not match required format: type/NNN-description (e.g., feat/123-feature-name).`);
+              return;
+            }
+            const match = branch.match(pattern);
+            const issueNumber = match[2];
+            core.info(`Branch "${branch}" references issue #${issueNumber}.`);
+
+            // Verify the issue exists
+            try {
+              const issue = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNumber),
+              });
+              core.info(`Found issue #${issueNumber}: ${issue.data.title}`);
+            } catch (e) {
+              core.setFailed(`Issue #${issueNumber} not found. Ensure the branch references a valid issue number.`);
+              return;
+            }
+
+            // Verify PR targets develop
+            const base = context.payload.pull_request.base.ref;
+            if (base !== 'develop') {
+              core.setFailed(`PR base branch is "${base}" but should be "develop".`);
+              return;
+            }
+
+            core.info('Branch policy checks passed.');
