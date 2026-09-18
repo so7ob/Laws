@@ -25,6 +25,9 @@ import {
   GitBranch,
   FileX2,
   RefreshCcw,
+  CheckCircle2,
+  Loader2,
+  PlayCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -97,11 +100,59 @@ function OperationsList({ count, docId }: { count: number; docId: string }) {
   )
 }
 
-function AmendmentCard({ doc }: { doc: any }) {
+function AmendmentCard({ doc, onApplied }: { doc: any; onApplied: () => void }) {
   const [open, setOpen] = React.useState(false)
+  const [busy, setBusy] = React.useState(false)
+  const [err, setErr] = React.useState<string | null>(null)
   const status = STATUS_LABELS[doc.status] || { label: doc.status, color: '' }
   const target = doc.targetLegislation
   const source = doc.sourceLegislation
+  const canApply = ['in_review', 'approved'].includes(doc.status)
+  const isApplied = doc.status === 'applied'
+
+  async function handleTransition(newStatus: string) {
+    setBusy(true)
+    setErr(null)
+    try {
+      const res = await fetch(`/api/admin/amendments/${doc.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `فشل (HTTP ${res.status})`)
+      toast.success('تم تحديث حالة الوثيقة', {
+        description: `الحالة: ${STATUS_LABELS[newStatus]?.label || newStatus}`,
+      })
+      onApplied()
+    } catch (e: any) {
+      setErr(e.message || 'فشل التحديث')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleApply() {
+    setBusy(true)
+    setErr(null)
+    try {
+      const res = await fetch(`/api/admin/amendments/${doc.id}/apply`, {
+        method: 'POST',
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.error || `فشل التطبيق (HTTP ${res.status})`)
+      }
+      toast.success('تم تطبيق وثيقة التعديل ذريًا', {
+        description: `${data.appliedOperations || 0} عملية مُطبّقة`,
+      })
+      onApplied()
+    } catch (e: any) {
+      setErr(e.message || 'فشل التطبيق')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -180,6 +231,52 @@ function AmendmentCard({ doc }: { doc: any }) {
               count={doc._count?.operations ?? doc.operationCount ?? 0}
               docId={doc.id}
             />
+
+            {/* Apply / transition actions */}
+            <div className="flex flex-wrap items-center gap-2 mt-3 border-t pt-3">
+              {isApplied ? (
+                <Badge variant="outline" className="gap-1 text-emerald-700 bg-emerald-50 border-emerald-200">
+                  <CheckCircle2 className="size-3.5" />
+                  مطبّق
+                  {doc.appliedAt && (
+                    <span className="text-[10px] text-muted-foreground">
+                      {formatDateShort(doc.appliedAt)}
+                    </span>
+                  )}
+                </Badge>
+              ) : doc.status === 'draft' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleTransition('in_review')}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <PlayCircle className="size-3.5" />
+                  )}
+                  نقل لقيد المراجعة
+                </Button>
+              ) : canApply ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleApply}
+                  disabled={busy}
+                >
+                  {busy ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="size-3.5" />
+                  )}
+                  تطبيق ذريّ
+                </Button>
+              ) : null}
+              {err && (
+                <span className="text-xs text-destructive line-clamp-1">{err}</span>
+              )}
+            </div>
           </CollapsibleContent>
       </CardContent>
     </Card>
@@ -300,7 +397,7 @@ export function AmendmentsSection() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {data.items.map((doc: any) => (
-            <AmendmentCard key={doc.id} doc={doc} />
+            <AmendmentCard key={doc.id} doc={doc} onApplied={reload} />
           ))}
         </div>
       )}
