@@ -160,7 +160,9 @@ export function LegislationDetailView() {
 
   function handleCopyLink() {
     if (typeof window === 'undefined') return
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    // Use a stable deep-link to the legislation rather than the SPA root.
+    const stableUrl = `${window.location.origin}/l/${slug}`
+    navigator.clipboard.writeText(stableUrl).then(() => {
       setLinkCopied(true)
       toast.success('تم نسخ الرابط')
       setTimeout(() => setLinkCopied(false), 2000)
@@ -341,7 +343,7 @@ export function LegislationDetailView() {
                 <Printer className="h-4 w-4 ml-1.5" />
                 <span className="hidden sm:inline">طباعة</span>
               </Button>
-              <ShareDialog legislationTitle={data.officialTitle} />
+              <ShareDialog legislationTitle={data.officialTitle} slug={data.slug} />
               <CitationDialog
                 data={{
                   officialTitle: data.officialTitle,

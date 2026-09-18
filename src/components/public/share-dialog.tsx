@@ -25,11 +25,24 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-export function ShareDialog({ legislationTitle }: { legislationTitle: string }) {
+export function ShareDialog({
+  legislationTitle,
+  slug,
+}: {
+  legislationTitle: string
+  slug: string
+}) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const url = typeof window !== 'undefined' ? window.location.href : ''
+  // Build a stable, shareable deep-link to this legislation. Falls back to
+  // window.location.href if no slug is provided (shouldn't happen in practice).
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+  const url = slug
+    ? `${baseUrl}/l/${slug}`
+    : typeof window !== 'undefined'
+    ? window.location.href
+    : ''
   const text = `${legislationTitle} — منصة التشريعات اليمنية`
 
   function handleCopy() {
