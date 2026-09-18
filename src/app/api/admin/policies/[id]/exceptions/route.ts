@@ -26,16 +26,30 @@ export async function GET(
     const exceptions = await db.policyException.findMany({
       where: { policyId: id },
       orderBy: { createdAt: 'desc' },
-      include: {
-        user: {
-          select: { id: true, username: true, fullName: true, email: true },
-        },
-        grantedBy: {
-          select: { username: true, fullName: true },
-        },
-      },
     })
-    return NextResponse.json({ items: exceptions })
+    // The PolicyException model has no relations to User, so we join manually.
+    const userIds = Array.from(
+      new Set(
+        exceptions
+          .map((e) => [e.userId, e.grantedById])
+          .flat()
+          .filter(Boolean) as string[]
+      )
+    )
+    const users =
+      userIds.length > 0
+        ? await db.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, username: true, fullName: true, email: true },
+          })
+        : []
+    const userMap = new Map(users.map((u) => [u.id, u]))
+    const items = exceptions.map((e) => ({
+      ...e,
+      user: userMap.get(e.userId) || null,
+      grantedBy: userMap.get(e.grantedById || '') || null,
+    }))
+    return NextResponse.json({ items })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
@@ -100,15 +114,26 @@ export async function POST(
         expiresAt,
         isActive: body.isActive !== false,
       },
-      include: {
-        user: {
-          select: { id: true, username: true, fullName: true, email: true },
-        },
-        grantedBy: {
-          select: { username: true, fullName: true },
-        },
-      },
     })
+
+    // Hydrate with user info (no schema relation).
+    const [u, granted] = await Promise.all([
+      db.user.findUnique({
+        where: { id: userId },
+        select: { id: true, username: true, fullName: true, email: true },
+      }),
+      actingUserId
+        ? db.user.findUnique({
+            where: { id: actingUserId },
+            select: { username: true, fullName: true },
+          })
+        : Promise.resolve(null),
+    ])
+
+    return NextResponse.json(
+      { item: { ...created, user: u, grantedBy: granted } },
+      { status: 201 }
+    )
 
     // Audit log
     try {
