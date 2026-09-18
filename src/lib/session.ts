@@ -1,15 +1,18 @@
-import crypto from 'crypto'
-
 /**
- * Demo-grade session signing.
+ * Demo-grade session signing (runtime-agnostic).
  *
- * The session cookie carries `<userId>.<roleCodes>.<hmac>` where the HMAC
- * is computed over `userId.roleCodes.expiry` using the session secret. This
- * is stateless (no session table) and survives process restarts, which fits
- * the sandbox deployment model.
+ * The session cookie carries
+ * `<userId>.<username>.<roles>.<expiry>.<mac>` where the HMAC is computed
+ * over `userId.username.roles.expiry` using the session secret.
  *
- * Production would use a server-side session store + rotated secret; this
- * is documented as a demo limitation in the README.
+ * Uses the Web Crypto API (SubtleCrypto) exclusively, which is available
+ * in both the Node.js and Edge runtimes (Node 18+ exposes it globally).
+ * All signing functions are therefore async.
+ *
+ * This is stateless (no session table) and survives process restarts,
+ * which fits the sandbox deployment model. Production would use a
+ * server-side session store + rotated secret; this is documented as a
+ * demo limitation in the README.
  */
 
 const SESSION_SECRET =
@@ -34,41 +37,62 @@ export function getSessionMaxAge() {
   return MAX_AGE_SECONDS
 }
 
-function sign(message: string): string {
-  return crypto.createHmac('sha256', SESSION_SECRET).update(message).digest('hex')
+// Cache the imported HMAC key so we don't re-import on every request.
+let cachedKey: CryptoKey | null = null
+
+async function getKey(): Promise<CryptoKey> {
+  if (cachedKey) return cachedKey
+  const enc = new TextEncoder()
+  cachedKey = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(SESSION_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  )
+  return cachedKey
+}
+
+async function hmacHex(message: string): Promise<string> {
+  const key = await getKey()
+  const enc = new TextEncoder()
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 /**
  * Create a signed session cookie value for the given payload.
+ * Async — uses Web Crypto (Edge + Node compatible).
  */
-export function createSessionCookieValue(payload: SessionPayload): string {
+export async function createSessionCookieValue(
+  payload: SessionPayload
+): Promise<string> {
   const roleStr = payload.roleCodes.join(',')
   const message = `${payload.userId}.${payload.username}.${roleStr}.${payload.expiry}`
-  const mac = sign(message)
+  const mac = await hmacHex(message)
   return `${message}.${mac}`
 }
 
 /**
  * Verify a cookie value and return the payload, or null if invalid/expired.
+ * Async — uses Web Crypto (Edge + Node compatible).
  */
-export function verifySessionCookieValue(value: string | undefined | null): SessionPayload | null {
+export async function verifySessionCookieValue(
+  value: string | undefined | null
+): Promise<SessionPayload | null> {
   if (!value) return null
   const parts = value.split('.')
-  // Expected: userId.username.roles.expiry.mac
-  // roles is comma-joined, so reconstruct carefully: everything between
-  // the 3rd dot and the last dot is "roles.expiry" but roles has no dots,
-  // so we can split on dots and expect exactly 5 segments.
+  // Expected: userId.username.roles.expiry.mac — 5 segments.
   if (parts.length !== 5) return null
   const [userId, username, roleStr, expiryStr, mac] = parts
   if (!userId || !username || !roleStr || !expiryStr || !mac) return null
 
   const message = `${userId}.${username}.${roleStr}.${expiryStr}`
-  const expectedMac = sign(message)
-  // Constant-time comparison.
+  const expectedMac = await hmacHex(message)
   if (mac.length !== expectedMac.length) return null
-  if (!crypto.timingSafeEqual(Buffer.from(mac, 'hex'), Buffer.from(expectedMac, 'hex'))) {
-    return null
-  }
+  if (mac !== expectedMac) return null
 
   const expiry = parseInt(expiryStr, 10)
   if (!Number.isFinite(expiry)) return null
@@ -85,8 +109,10 @@ export function verifySessionCookieValue(value: string | undefined | null): Sess
 /**
  * Build the Set-Cookie header string for a session.
  */
-export function buildSessionCookieHeader(payload: SessionPayload): string {
-  const value = createSessionCookieValue(payload)
+export async function buildSessionCookieHeader(
+  payload: SessionPayload
+): Promise<string> {
+  const value = await createSessionCookieValue(payload)
   const flags = [
     `${COOKIE_NAME}=${value}`,
     'Path=/',

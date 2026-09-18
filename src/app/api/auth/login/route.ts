@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     const roleCodes = user.roles.map((r) => r.role.code)
     const expiry = Date.now() + getSessionMaxAge() * 1000
-    const cookie = buildSessionCookieHeader({
+    const cookie = await buildSessionCookieHeader({
       userId: user.id,
       username: user.username,
       roleCodes,
