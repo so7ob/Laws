@@ -351,3 +351,44 @@ Stage Summary:
 - دورة التعديل الكاملة منفذة الآن: إنشاء (F03p2) → انتقال → تطبيق ذري (F08-003) + AuditLog + منع تكرار.
 - مصفوفة المتطلبات: REQ-08-003 (ذرية + منع تكرار) منفذة.
 - الخطوة التالية: F03-p4 (أدوار/مستخدمون جدد) ثم تحسينات إضافية.
+
+---
+
+Task ID: F03-p4
+Agent: main (session continuation)
+Task: تفعيل إنشاء الأدوار والمستخدمين (F03-p4 / REQ-16-001)
+
+Work Log:
+- راجعت الحالة: develop=9a096e5، F08-003 منفذ (وثائقه محدّثة)، F03-p4 التالية.
+- حددت 5 مواضع «قريبًا» في roles-section (3) وusers-section (2). ركزت على الإنشاء (دور جديد + مستخدم جديد).
+- أنشأت GitHub Issue #47 «تفعيل إنشاء الأدوار والمستخدمين (F03-p4 / REQ-16-001)».
+- أنشأت فرع fix/47-roles-users-creation من develop ونفذت:
+  - POST /api/admin/roles: تحقق code+nameAr، 409 للتكرار، قيم افتراضية (isProtected=false)، AuditLog.
+  - POST /api/admin/users: تحقق username/email/fullName/password (٨+)، 409 للتكرار، تجزئة bcrypt، ربط بالأدوار في معاملة (UserRole)، AuditLog.
+  - CreateRoleDialog: code, nameAr, description, powerLevel + أخطaa 400/409.
+  - CreateUserDialog: username, email, fullName, password, رقائق أدوار متعددة الاختيار + أخطaa 400/409.
+  - استبدال إشارتي «قريبًا» على «دور جديد» و«إضافة مستخدم» بالحوارات.
+- نجح bun run lint.
+- دفعت الفرع وأنشأت PR #48 إلى develop.
+- نجحت فحوص CI: Lint ✓, Type Check ✓, Build ✓, Issue link ✓.
+- دمجت PR #48 (squash) إلى develop: commit 52a39a7.
+- أغلقت Issue #47.
+- أعدت main محاذيًا لـ origin/develop وأعدت تشغيل خادم التطوير.
+- اختبار API (curl):
+  * POST role (test_editor) → 201.
+  * POST role مكرر → 409.
+  * POST user (testuser1) → 201.
+  * POST user مكرر → 409.
+- تحقق end-to-end بـ agent-browser:
+  * دخول admin → الإدارة ← الأدوار ← «إنشاء دور جديد» → حوار يفتح (الرمز، الاسم، مستوى الصلاحية).
+  * الإدارة ← المستخدمون ← «إضافة مستخدم جديد» → حوار يفتح (اسم المستخدم، كلمة المرور، رقائق الأدوار).
+  * لا أخطاء console.
+  * لقطات شاشة: /tmp/create-role-dialog-f03p4.png, /tmp/create-user-dialog-f03p4.png.
+
+Stage Summary:
+- الفجوة F03-p4 (إنشاء أدوار/مستخدمين) معالجة بالكامل.
+- Issue #47 مغلقة، PR #48 مدموج في develop (52a39a7).
+- إنشاء الأدوار والمستخدمين يعمل من الواجهة مع تجزئة bcrypt + AuditLog.
+- مصفوفة المتطلبات: REQ-16-001 (جزء الإنشاء)، REQ-22-001 (جزء إضافة الأدوار/المستخدمين) منفذة.
+- جميع أزرار الإنشاء في F03 (تشريع، تعديل، استثناء، دور، مستخدم) منفذة الآن.
+- الخطوة التالية: تحسينات إضافية (روابط البحث، عارض PDF) أو أزرار التعديل المتبقية.
