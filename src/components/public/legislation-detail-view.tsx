@@ -74,6 +74,7 @@ import { toast } from 'sonner'
 import { LegislationFeedback } from '@/components/public/legislation-feedback'
 import { ShareDialog } from '@/components/public/share-dialog'
 import { CitationDialog } from '@/components/public/citation-dialog'
+import { DocumentViewer } from '@/components/public/document-viewer'
 
 interface LegislationDetail {
   id: string
@@ -1338,6 +1339,7 @@ function AttachmentsTab({ slug, attachments }: { slug: string; attachments: any[
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
 
   useEffect(() => {
     fetch(`/api/legislations/${slug}/attachments`)
@@ -1430,6 +1432,14 @@ function AttachmentsTab({ slug, attachments }: { slug: string; attachments: any[
 
               {/* Download actions — wired to the real API route */}
               <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/60">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setViewerIndex(items.indexOf(att))}
+                >
+                  <Maximize2 className="h-4 w-4 ml-1.5" />
+                  عرض في العارض
+                </Button>
                 {att.contentType === 'table' && (
                   <Button asChild variant="outline" size="sm">
                     <a href={`/api/legislations/${slug}/attachments/${att.id}/download`}>
@@ -1462,6 +1472,15 @@ function AttachmentsTab({ slug, attachments }: { slug: string; attachments: any[
           )}
         </Card>
       ))}
+      {viewerIndex !== null && (
+        <DocumentViewer
+          attachments={items}
+          initialIndex={viewerIndex}
+          open={viewerIndex !== null}
+          onOpenChange={(o) => !o && setViewerIndex(null)}
+          attachmentTypeLabels={ATTACHMENT_TYPE_LABELS}
+        />
+      )}
     </div>
   )
 }
