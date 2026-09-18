@@ -2,9 +2,8 @@
 
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -29,10 +28,14 @@ import {
   FileText,
   FileSpreadsheet,
   FileArchive,
+  FileImage,
+  FileType2,
   File as FileIcon,
   RefreshCcw,
   FileX2,
   Loader2,
+  X,
+  Plus,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { relativeTime } from '@/lib/constants'
@@ -57,6 +60,8 @@ function fileIcon(type: string) {
   if (['xls', 'xlsx', 'csv'].includes(t)) return FileSpreadsheet
   if (['zip', 'rar', '7z'].includes(t)) return FileArchive
   if (['pdf'].includes(t)) return FileText
+  if (['md', 'markdown'].includes(t)) return FileType2
+  if (['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'].includes(t)) return FileImage
   return FileIcon
 }
 
@@ -72,46 +77,180 @@ function formatBytes(bytes: number): string {
   return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
+// Extension → fileType mapping. Drives both validation and the API payload.
+const ALLOWED_EXTENSIONS = [
+  'txt', 'md', 'markdown',
+  'pdf', 'doc', 'docx',
+  'xls', 'xlsx', 'csv',
+  'json', 'html',
+  'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp',
+] as const
+
+const ACCEPT_ATTR =
+  '.txt,.md,.markdown,.pdf,.doc,.docx,.xls,.xlsx,.csv,.json,.html,.png,.jpg,.jpeg,.gif,.bmp,.webp'
+
+// Formats whose body can be read as text in the browser. For these we
+// populate extractionText directly; binary formats stay metadata-only
+// (extraction deferred to a server-side worker / OCR pipeline).
+const TEXT_EXTRACTABLE = new Set(['txt', 'md', 'markdown', 'csv', 'json', 'html'])
+
+function extOf(name: string): string {
+  return (name.split('.').pop() || '').toLowerCase()
+}
+
+function fileTypeLabel(t: string): string {
+  const map: Record<string, string> = {
+    md: 'Markdown',
+    markdown: 'Markdown',
+    docx: 'Word',
+    xls: 'Excel',
+    xlsx: 'Excel',
+    png: 'PNG',
+    jpg: 'JPG',
+    jpeg: 'JPG',
+    gif: 'GIF',
+    bmp: 'BMP',
+    webp: 'WebP',
+  }
+  return map[t] || t.toUpperCase()
+}
+
+interface PickedFile {
+  file: File
+  ext: string
+  extractedText?: string
+  extracting: boolean
+  error?: string
+}
+
 function UploadDialog({ onUploaded }: { onUploaded: () => void }) {
   const [open, setOpen] = React.useState(false)
-  const [fileName, setFileName] = React.useState('')
-  const [fileType, setFileType] = React.useState('pdf')
-  const [fileSize, setFileSize] = React.useState(0)
+  const [picked, setPicked] = React.useState<PickedFile[]>([])
   const [saving, setSaving] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    if (!f) return
-    setFileName(f.name)
-    setFileSize(f.size)
-    const ext = f.name.split('.').pop()?.toLowerCase() || 'txt'
-    setFileType(ext)
+  async function extractText(file: File, ext: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const text = String(reader.result || '')
+        // Cap the extracted text to avoid oversized payloads.
+        resolve(text.slice(0, 200_000))
+      }
+      reader.onerror = () => reject(new Error('تعذّر قراءة الملف'))
+      reader.readAsText(file, 'utf-8')
+    })
+  }
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return
+    const incoming: PickedFile[] = []
+    for (const f of Array.from(files)) {
+      const ext = extOf(f.name)
+      if (!ALLOWED_EXTENSIONS.includes(ext as any)) {
+        toast.error(`نوع غير مدعوم: ${ext || 'مجهول'}`, {
+          description: f.name,
+        })
+        continue
+      }
+      incoming.push({ file: f, ext, extracting: false })
+    }
+    if (incoming.length === 0) return
+
+    // Merge with existing picked files (de-dup by name+size).
+    setPicked((prev) => {
+      const seen = new Set(prev.map((p) => `${p.file.name}:${p.file.size}`))
+      const merged = [...prev]
+      for (const p of incoming) {
+        const key = `${p.file.name}:${p.file.size}`
+        if (!seen.has(key)) {
+          merged.push(p)
+          seen.add(key)
+        }
+      }
+      return merged
+    })
+
+    // Kick off text extraction for text-extractable files (fire-and-forget
+    // per file, state updated when each resolves).
+    for (const p of incoming) {
+      if (TEXT_EXTRACTABLE.has(p.ext)) {
+        setPicked((prev) =>
+          prev.map((x) => (x === p ? { ...x, extracting: true } : x))
+        )
+        try {
+          const text = await extractText(p.file, p.ext)
+          setPicked((prev) =>
+            prev.map((x) =>
+              x === p ? { ...x, extracting: false, extractedText: text } : x
+            )
+          )
+        } catch (e: any) {
+          setPicked((prev) =>
+            prev.map((x) =>
+              x === p ? { ...x, extracting: false, error: e.message } : x
+            )
+          )
+        }
+      }
+    }
+  }
+
+  function removePicked(idx: number) {
+    setPicked((prev) => prev.filter((_, i) => i !== idx))
   }
 
   async function handleSubmit() {
-    if (!fileName.trim()) {
-      toast.error('اختر ملفًا أولاً')
+    if (picked.length === 0) {
+      toast.error('اختر ملفًا واحدًا على الأقل')
+      return
+    }
+    // Block submit while any text-extractable file is still being read.
+    if (picked.some((p) => p.extracting)) {
+      toast.info('جارٍ قراءة الملفات النصية...', {
+        description: 'انتظر اكتمال الاستخراج قبل الرفع',
+      })
       return
     }
     setSaving(true)
+    let ok = 0
+    let fail = 0
     try {
-      const res = await fetch('/api/admin/imports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName, fileType, fileSize }),
-      })
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}))
-        throw new Error(e.error || 'فشل الرفع')
+      for (const p of picked) {
+        const notes = TEXT_EXTRACTABLE.has(p.ext)
+          ? p.extractedText
+            ? 'استخراج نصي تلقائي (FileReader)'
+            : 'صيغة نصية لكن لم يُستخرج النص'
+          : 'صيغة ثنائية — الاستخراج معلق على معالجة خادمية/OCR'
+        const res = await fetch('/api/admin/imports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: p.file.name,
+            fileType: p.ext === 'markdown' ? 'md' : p.ext,
+            fileSize: p.file.size,
+            text: TEXT_EXTRACTABLE.has(p.ext) ? p.extractedText || '' : '',
+            notes,
+          }),
+        })
+        if (res.ok) ok++
+        else fail++
       }
-      toast.success('تم إنشاء سجل الاستيراد', {
-        description: `${fileName} تمت إضافته لقائمة الانتظار`,
-      })
-      setFileName('')
-      setFileSize(0)
-      setOpen(false)
-      onUploaded()
+      if (ok > 0) {
+        toast.success(`تم رفع ${arNum(ok)} ملف`, {
+          description:
+            fail > 0
+              ? `تعذّر رفع ${arNum(fail)} ملف`
+              : 'جميع الملفات أُضيفت لقائمة الانتظار',
+        })
+      } else if (fail > 0) {
+        toast.error(`تعذّر رفع ${arNum(fail)} ملف`)
+      }
+      if (ok > 0) {
+        setPicked([])
+        setOpen(false)
+        onUploaded()
+      }
     } catch (e: any) {
       toast.error(e.message || 'فشل الرفع')
     } finally {
@@ -124,10 +263,7 @@ function UploadDialog({ onUploaded }: { onUploaded: () => void }) {
       open={open}
       onOpenChange={(o) => {
         setOpen(o)
-        if (!o) {
-          setFileName('')
-          setFileSize(0)
-        }
+        if (!o) setPicked([])
       }}
     >
       <DialogTrigger asChild>
@@ -136,72 +272,113 @@ function UploadDialog({ onUploaded }: { onUploaded: () => void }) {
           رفع ملف جديد
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>رفع ملف استيراد جديد</DialogTitle>
+          <DialogTitle>رفع ملفات استيراد</DialogTitle>
           <DialogDescription>
-            ارفع ملف تشريع خام لاستخراج محتواه. سيتم إنشاء سجل استيراد بحالة «مرفوع».
+            ارفع ملفًا واحدًا أو أكثر لاستيراد تشريع. الصيغ النصية (txt, md, csv,
+            json, html) تُستخرج تلقائيًا. الصيغ الثنائية (pdf, docx, xlsx, صور)
+            تسجل بياناتها الوصفية بانتظار المعالجة الخادمية.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="imp-file">اختر الملف</Label>
+            <Label htmlFor="imp-file">اختر الملفات</Label>
             <input
               ref={inputRef}
               id="imp-file"
               type="file"
-              accept=".pdf,.txt,.doc,.docx,.xls,.xlsx,.csv,.json,.html"
-              onChange={handleFile}
+              multiple
+              accept={ACCEPT_ATTR}
+              onChange={(e) => handleFiles(e.target.files)}
               className="block w-full text-sm file:ml-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer hover:file:bg-primary/90"
             />
-            {fileName && (
-              <p className="text-xs text-muted-foreground">
-                تم اختيار: <span className="font-medium">{fileName}</span> ({formatBytes(fileSize)})
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground">
+              الأنواع المدعومة: txt, md, pdf, doc, docx, xls, xlsx, csv, json,
+              html, png, jpg, jpeg, gif, bmp, webp
+            </p>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="imp-name">اسم الملف</Label>
-              <Input
-                id="imp-name"
-                value={fileName}
-                onChange={(e) => setFileName(e.target.value)}
-                placeholder="مثال: law-2024.pdf"
-              />
+
+          {picked.length > 0 && (
+            <div className="space-y-2 max-h-64 overflow-y-auto rounded-lg border p-2 bg-muted/20">
+              {picked.map((p, i) => {
+                const Icon = fileIcon(p.ext)
+                return (
+                  <div
+                    key={`${p.file.name}-${i}`}
+                    className="flex items-center gap-2 rounded-md bg-background p-2 border"
+                  >
+                    <div className="size-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Icon className="size-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate" title={p.file.name}>
+                        {p.file.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {fileTypeLabel(p.ext)} • {formatBytes(p.file.size)}
+                        {TEXT_EXTRACTABLE.has(p.ext) && (
+                          <span className="mx-1">•</span>
+                        )}
+                        {TEXT_EXTRACTABLE.has(p.ext) && (
+                          <span
+                            className={
+                              p.extracting
+                                ? 'text-amber-600'
+                                : p.extractedText
+                                ? 'text-emerald-600'
+                                : p.error
+                                ? 'text-rose-600'
+                                : ''
+                            }
+                          >
+                            {p.extracting
+                              ? 'جارٍ الاستخراج...'
+                              : p.extractedText
+                              ? `استُخرج ${arNum(p.extractedText.length)} حرف`
+                              : p.error || 'لم يُستخرج'}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 shrink-0"
+                      onClick={() => removePicked(i)}
+                      aria-label={`إزالة ${p.file.name}`}
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
+                )
+              })}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="imp-type">النوع</Label>
-              <Select value={fileType} onValueChange={setFileType}>
-                <SelectTrigger id="imp-type" className="w-full">
-                  <SelectValue placeholder="النوع" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pdf">PDF</SelectItem>
-                  <SelectItem value="txt">نص</SelectItem>
-                  <SelectItem value="doc">Word</SelectItem>
-                  <SelectItem value="html">HTML</SelectItem>
-                  <SelectItem value="json">JSON</SelectItem>
-                  <SelectItem value="csv">CSV</SelectItem>
-                </SelectContent>
-              </Select>
+          )}
+
+          {picked.length === 0 && (
+            <div className="flex items-center justify-center py-8 border-2 border-dashed rounded-lg text-muted-foreground text-sm">
+              <div className="text-center">
+                <Plus className="size-6 mx-auto mb-1 opacity-50" />
+                لم تختر أي ملف بعد
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             إلغاء
           </Button>
-          <Button onClick={handleSubmit} disabled={saving}>
+          <Button onClick={handleSubmit} disabled={saving || picked.length === 0}>
             {saving ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                جارٍ الرفع...
+                جارٍ الرفع ({arNum(picked.length)})...
               </>
             ) : (
               <>
                 <Upload className="size-4" />
-                رفع الملف
+                رفع {arNum(picked.length)} ملف
               </>
             )}
           </Button>
