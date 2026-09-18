@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { WORKFLOW_STATUS_LABELS, relativeTime } from '@/lib/constants'
 import { arNum, EmptyState, ErrorState, SectionHeader } from '../admin-shared'
+import { CreateLegislationDialog } from './create-legislation-dialog'
 
 interface Resp {
   items: any[]
@@ -133,14 +134,8 @@ export function LegislationsSection() {
               <Upload className="size-4" />
               استيراد
             </Button>
-            <Button
-              size="sm"
-              onClick={() => toast.info('قريبًا', { description: 'إضافة تشريع جديد' })}
-            >
-              <Plus className="size-4" />
-              إضافة تشريع جديد
-            </Button>
-          </>
+            <CreateLegislationDialog onCreated={reload} />
+            </>
         }
       />
 
