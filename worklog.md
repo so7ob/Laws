@@ -261,3 +261,42 @@ Stage Summary:
 - إنشاء وثيقة التعديل يعمل من الواجهة مع عمليات متعددة + معاملة + AuditLog.
 - مصفوفة المتطلبات: REQ-08-001 منفذة، REQ-08-002 (الأنواع السبعة) منفذة.
 - الخطوة التالية: F03-p3 (استثناءات السياسات) أو تحسينات إضافية.
+
+---
+
+Task ID: F03-p3
+Agent: main (session continuation)
+Task: تفعيل إدارة استثناءات السياسات (F03-p3 / REQ-17-001)
+
+Work Log:
+- راجعت الحالة: develop=db2dabf، F03p2 منفذ، F03p3 التالية.
+- أنشأت GitHub Issue #38 «تفعيل إدارة استثناءات السياسات (F03-p3 / REQ-17-001)».
+- أنشأت فرع fix/38-policy-exceptions من develop ونفّذت:
+  - GET/POST /api/admin/policies/[id]/exceptions: قائمة + إنشاء استثناء (policyId, userId, reason, expiresAt?، grantedById من الجلسة) + تحقق + AuditLog.
+  - DELETE /api/admin/policies/[id]/exceptions/[exceptionId]: حذف ناعم (isActive=false) + AuditLog.
+  - ManageExceptionsDialog: قائمة الاستثناءات (مستخدم، سبب، تاريخ انتهاء، وسم نشط/ملغى، grantedBy) + زر إلغاء inline + نموذج إضافة (اختيار مستخدم، سبب، تاريخ انتهاء).
+  - استبدال إشعار «قريبًا» على «إدارة الاستثناءات» بفتح الحوار.
+- نجح bun run lint.
+- دفعت الفرع وأنشأت PR #39 إلى develop.
+- نجحت فحوص CI، دمجت PR #39 (squash): commit 404336e.
+- أغلقت Issue #38.
+- اكتشفت عيب وقت التشغيل: نموذج PolicyException لا يحوي علاقات user/grantedBy (فقط policy)، فـ include: {user} يفشل.
+- أصلحت: GET يجلب الاستثناءات ثم يجلب المستخدمين يدويًا (batch fetch) ويدمجهم. POST ينشئ ثم يجلب user + grantedBy منفصلًا.
+- دفعت الإصلاح وأنشأت PR #40، نجحت CI، دمجت: commit 6f00243.
+- أعدت main محاذٍا لـ origin/develop وأعدت تشغيل خادم التطوير.
+- اختبار API (curl):
+  * GET exceptions → 200 (بعد الإصلاح).
+  * POST exceptions (userId + reason) → 201 مع user مُدمج.
+- تحقق end-to-end بـ agent-browser:
+  * دخول admin → الإدارة ← السياسات.
+  * زر «إدارة الاستثناءات» → فتح حوار «استثناءات السياسة» (لا إشعار «قريبًا»).
+  * الحوار يعرض: قائمة الاستثناءات الحالية (0)، نموذج إضافة (مستخدم combobox، سبب، تاريخ انتهاء).
+  * لا أخطاء console.
+  * لقطة شاشة /tmp/exceptions-dialog-f03p3.png.
+
+Stage Summary:
+- الفجوة F03-p3 (استثناءات السياسات) معالجة بالكامل.
+- Issue #38 مغلقة، PR #39 + PR #40 مدموجان في develop (6f00243).
+- إدارة استثناءات السياسات تعمل من الواجهة (قائمة + إضافة + إلغاء) + AuditLog.
+- مصفوفة المتطلبات: REQ-17-001 منفذة (إدارة الاستثناءات منفصلة).
+- الخطوة التالية: F03-p4 (أدوار/مستخدمون جدد) أو F08-003 (التطبيق الذري للعمليات).
