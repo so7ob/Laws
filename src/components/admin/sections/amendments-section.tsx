@@ -33,6 +33,7 @@ import {
   relativeTime,
 } from '@/lib/constants'
 import { arNum, EmptyState, ErrorState, SectionHeader } from '../admin-shared'
+import { CreateAmendmentDialog } from './create-amendment-dialog'
 
 interface Resp {
   items: any[]
@@ -246,13 +247,7 @@ export function AmendmentsSection() {
               <RefreshCcw className={loading ? 'size-4 animate-spin' : 'size-4'} />
               تحديث
             </Button>
-            <Button
-              size="sm"
-              onClick={() => toast.info('قريبًا', { description: 'إنشاء وثيقة تعديل جديدة' })}
-            >
-              <FileText className="size-4" />
-              وثيقة تعديل جديدة
-            </Button>
+            <CreateAmendmentDialog onCreated={reload} />
           </>
         }
       />
