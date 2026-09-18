@@ -300,3 +300,54 @@ Stage Summary:
 - إدارة استثناءات السياسات تعمل من الواجهة (قائمة + إضافة + إلغاء) + AuditLog.
 - مصفوفة المتطلبات: REQ-17-001 منفذة (إدارة الاستثناءات منفصلة).
 - الخطوة التالية: F03-p4 (أدوار/مستخدمون جدد) أو F08-003 (التطبيق الذري للعمليات).
+
+---
+
+Task ID: F08-003
+Agent: main (session continuation)
+Task: التطبيق الذري لعمليات التعديل (F08-003 / REQ-08-003)
+
+Work Log:
+- راجعت الحالة: develop=d965ae4، F03p3 منفذ، F08-003 التالية (آخر فجوة حرجة في دورة التعديل).
+- استعنت بمشروع Rakim (lifecycle.service) لفهم نمط التطبيق الذري.
+- أنشأت GitHub Issue #43 «التطبيق الذري لعمليات التعديل (F08-003 / REQ-08-003)».
+- أنشأت فرع fix/43-amendment-apply من develop ونفّذت:
+  - POST /api/admin/amendments/[id]/apply: تطبيق ذري في معاملة Prisma واحدة.
+    * منع إعادة التطبيق: status='applied' → 409.
+    * يتطلب status في [in_review, approved] (draft لا يمكن تطبيقه).
+    * لكل عملية حسب النوع:
+      - replace: إغلاق النسخة الحالية + ArticleVersion جديدة (amended).
+      - add: Article جديد + ArticleVersion (added).
+      - repeal: نسخة ملغاة (repealed).
+      - renumber: تحديث publishedNumber + نسخة renumbered.
+      - correct: نسخة corrected.
+      - substitute_phrase: استبدال العبارة + نسخة amended.
+      - delete_part: حذف جزء + نسخة amended.
+    * يحدّث الوثيقة: status=applied, appliedAt, appliedById.
+    * علامة applied=true على كل عملية + AuditLog.
+  - PATCH /api/admin/amendments/[id]: آلة حالة للانتقالات (draft→in_review→approved→applied) + AuditLog.
+  - AmendmentCard: زر «نقل لقيد المراجعة» (draft)، «تطبيق ذريّ» (in_review/approved)، وسم «مطبّق» (applied).
+- نجح bun run lint.
+- دفعت الفرع وأنشأت PR #44 إلى develop.
+- نجحت فحوص CI: Lint ✓, Type Check ✓, Build ✓, Issue link ✓.
+- دمجت PR #44 (squash) إلى develop: commit 5f361bf.
+- أغلقت Issue #43.
+- أعدت main محاذيًا لـ origin/develop وأعدت تشغيل خادم التطوير.
+- اختبار API (curl) للتدفق الكامل:
+  * إنشاء وثيقة تعديل (replace على مادة) → 201.
+  * انتقال draft → in_review → 200.
+  * تطبيق ذري → 200، appliedOperations=1، appliedAt.
+  * إعادة التطبيق → 409 (مرفوض).
+- تحقق end-to-end بـ agent-browser:
+  * دخول admin → الإدارة ← وثائق التعديل.
+  * وسّعت بطاقة «تعديل اختبار التطبيق» (المُنشأة عبر API والمطبّقة).
+  * تعرض وسم «مطبّق» في الواجهة.
+  * لا أخطاء console.
+  * لقطة شاشة /tmp/amendment-applied-f08-003.png.
+
+Stage Summary:
+- الفجوة F08-003 (التطبيق الذري + منع التكرار) معالجة بالكامل — آخر فجوة حرجة في دورة التعديل.
+- Issue #43 مغلقة، PR #44 مدموج في develop (5f361bf).
+- دورة التعديل الكاملة منفذة الآن: إنشاء (F03p2) → انتقال → تطبيق ذري (F08-003) + AuditLog + منع تكرار.
+- مصفوفة المتطلبات: REQ-08-003 (ذرية + منع تكرار) منفذة.
+- الخطوة التالية: F03-p4 (أدوار/مستخدمون جدد) ثم تحسينات إضافية.
