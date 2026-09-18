@@ -43,7 +43,6 @@ import {
   Calendar,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
   Hash,
   GitCompare,
   Clock,
@@ -53,6 +52,9 @@ import {
   ListOrdered,
   Copy,
   Check,
+  Download,
+  FileSpreadsheet,
+  FileDown,
 } from 'lucide-react'
 import {
   LEGAL_STATUS_LABELS,
@@ -1405,24 +1407,55 @@ function AttachmentsTab({ slug, attachments }: { slug: string; attachments: any[
           </button>
           {expanded === att.id && (
             <CardContent className="border-t bg-muted/20 p-4">
-              {att.textContent && (
-                <p className="legal-text text-sm mb-4">{att.textContent}</p>
+              {att.textContent && att.contentType !== 'file' && (
+                <p className="legal-text text-sm mb-4 whitespace-pre-wrap leading-relaxed">
+                  {att.textContent}
+                </p>
               )}
               {att.tableContent && att.contentType === 'table' && (
                 <TableView tableContent={att.tableContent} />
               )}
               {att.contentType === 'file' && (
-                <div className="flex items-center justify-center py-12 border-2 border-dashed rounded-lg">
+                <div className="flex items-center justify-center py-10 border-2 border-dashed rounded-lg bg-background/60">
                   <div className="text-center">
                     <FileText className="h-12 w-12 mx-auto mb-2 text-muted-foreground/50" />
-                    <p className="text-sm text-muted-foreground mb-3">ملف مرفق</p>
-                    <Button variant="outline" size="sm">
-                      <ExternalLink className="h-4 w-4 ml-1.5" />
-                      تنزيل الملف
-                    </Button>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      مرفق رقمي — يُحمّل كملف نصي وصفي
+                    </p>
                   </div>
                 </div>
               )}
+
+              {/* Download actions — wired to the real API route */}
+              <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/60">
+                {att.contentType === 'table' && (
+                  <Button asChild variant="outline" size="sm">
+                    <a href={`/api/legislations/${slug}/attachments/${att.id}/download`}>
+                      <FileSpreadsheet className="h-4 w-4 ml-1.5" />
+                      تنزيل CSV
+                    </a>
+                  </Button>
+                )}
+                {att.contentType === 'text' && att.textContent && (
+                  <Button asChild variant="outline" size="sm">
+                    <a href={`/api/legislations/${slug}/attachments/${att.id}/download`}>
+                      <Download className="h-4 w-4 ml-1.5" />
+                      تنزيل نص
+                    </a>
+                  </Button>
+                )}
+                {att.contentType === 'file' && (
+                  <Button asChild variant="default" size="sm">
+                    <a href={`/api/legislations/${slug}/attachments/${att.id}/download`}>
+                      <FileDown className="h-4 w-4 ml-1.5" />
+                      تنزيل الملف
+                    </a>
+                  </Button>
+                )}
+                <span className="text-xs text-muted-foreground ms-auto">
+                  صيغة: {att.contentType === 'table' ? 'CSV' : 'TXT'}
+                </span>
+              </div>
             </CardContent>
           )}
         </Card>
