@@ -7,6 +7,7 @@ import { ReadingProgress } from '@/components/common/reading-progress'
 import { KeyboardShortcuts } from '@/components/common/keyboard-shortcuts'
 import { PageTransition } from '@/components/common/page-transition'
 import { HomeView } from '@/components/public/home-view'
+import { LoginView } from '@/components/public/login-view'
 import { LegislationsView } from '@/components/public/legislations-view'
 import { LegislationDetailView } from '@/components/public/legislation-detail-view'
 import { SearchView } from '@/components/public/search-view'
@@ -50,15 +51,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {view !== 'admin' && <Header />}
-      {view !== 'admin' && view !== 'home' && <ReadingProgress />}
+      {view !== 'admin' && view !== 'login' && <Header />}
+      {view !== 'admin' && view !== 'home' && view !== 'login' && <ReadingProgress />}
       <main id="main-content" className="flex-1 w-full">
         <PageTransition trigger={view}>
           <ViewRouter view={view} />
         </PageTransition>
       </main>
-      {view !== 'admin' && <Footer />}
-      {view !== 'admin' && <KeyboardShortcuts />}
+      {view !== 'admin' && view !== 'login' && <Footer />}
+      {view !== 'admin' && view !== 'login' && <KeyboardShortcuts />}
     </div>
   )
 }
@@ -108,6 +109,8 @@ function ViewRouter({ view }: { view: string }) {
       return <FAQView />
     case 'admin':
       return <AdminShell />
+    case 'login':
+      return <LoginView />
     default:
       return <HomeView />
   }
