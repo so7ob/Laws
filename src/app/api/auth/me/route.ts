@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const cookieName = getSessionCookieName()
     const cookie = request.cookies.get(cookieName)?.value
-    const payload = verifySessionCookieValue(cookie)
+    const payload = await verifySessionCookieValue(cookie)
     if (!payload) {
       return NextResponse.json({ user: null }, { status: 401 })
     }
