@@ -27,7 +27,21 @@ export function RecentlyViewed() {
     try {
       const stored = localStorage.getItem('recentlyViewed')
       if (stored) {
-        setItems(JSON.parse(stored))
+        const parsed: RecentItem[] = JSON.parse(stored)
+        // Sanitize: drop items without a slug, then deduplicate by slug
+        // (keep the most recent entry per slug). This guards against stale
+        // localStorage data that may have accumulated duplicate or
+        // malformed entries, which would otherwise cause React unique
+        // key warnings when rendering the list.
+        const seen = new Set<string>()
+        const deduped: RecentItem[] = []
+        for (const item of parsed) {
+          if (!item || !item.slug) continue
+          if (seen.has(item.slug)) continue
+          seen.add(item.slug)
+          deduped.push(item)
+        }
+        setItems(deduped)
       }
     } catch {}
   }, [])
@@ -69,9 +83,9 @@ export function RecentlyViewed() {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {items.slice(0, 6).map((item) => (
+          {items.slice(0, 6).map((item, idx) => (
             <div
-              key={item.slug}
+              key={`${item.slug}-${idx}`}
               onClick={() => openLegislation(item.slug)}
               role="button"
               tabIndex={0}
