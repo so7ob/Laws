@@ -15,11 +15,11 @@ import {
   Megaphone,
   Power,
   RefreshCcw,
-  Settings2,
   Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { arNum, EmptyState, ErrorState, SectionHeader } from '../admin-shared'
+import { ManageExceptionsDialog } from './manage-exceptions-dialog'
 
 interface Resp {
   items: any[]
@@ -105,15 +105,7 @@ function PolicyCard({ policy }: { policy: any }) {
             <Users className="size-3" />
             استثناءات: {arNum(policy._count?.exceptions || 0)}
           </Badge>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => toast.info('قريبًا', { description: 'إدارة استثناءات السياسة' })}
-          >
-            <Settings2 className="size-3.5" />
-            إدارة الاستثناءات
-          </Button>
+          <ManageExceptionsDialog policyId={policy.id} policyName={policy.nameAr} />
         </div>
       </CardContent>
     </Card>
