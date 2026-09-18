@@ -61,6 +61,22 @@ export function SearchView() {
       .catch(() => {})
   }, [])
 
+  // Keep the browser URL in sync with the active query so searches are
+  // shareable via /s?q=<phrase>. Uses replaceState to avoid polluting
+  // the history stack on every keystroke.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (url.pathname === '/s') {
+      if (query.trim()) {
+        url.searchParams.set('q', query)
+      } else {
+        url.searchParams.delete('q')
+      }
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [query])
+
   const doSearch = useCallback(() => {
     if (!query.trim()) {
       setData(null)
@@ -148,6 +164,14 @@ export function SearchView() {
         </h1>
         <p className="text-sm text-muted-foreground">
           ابحث في نصوص التشريعات والمواد والملاحق مع تحليلات وتجميعات
+          {query.trim() && (
+            <a
+              href={`/s?q=${encodeURIComponent(query.trim())}`}
+              className="mr-2 text-primary hover:underline"
+            >
+              رابط بحث قابل للمشاركة
+            </a>
+          )}
         </p>
       </div>
 
