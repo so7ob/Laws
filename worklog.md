@@ -106,3 +106,44 @@ Based on interactive review dated 17 September 2026, the following issues were i
 7. Implement F10: Complete import file types
 8. Implement F12: Arabic calendar and UI translation
 9. Implement F14: Document demo mode and add authentication
+
+---
+
+Task ID: F14
+Agent: main (session continuation)
+Task: بوابة مصادقة للإدارة + توثيق الوضع التجريبي (F14)
+
+Work Log:
+- راجعت User model والبذرة: 6 مستخدمين تجريبيين بكلمات مرور bcrypt (Demo1234!).
+- أنشأت GitHub Issue #21 «بوابة مصادقة للإدارة + توثيق الوضع التجريبي (F14)».
+- أنشأت فرع fix/21-admin-auth-gate من develop ونفّذت:
+  - src/lib/session.ts: مكتبة جلسة عديمة الحالة بتوقيع HMAC (Web Crypto API، Edge+Node متوافق).
+    * createSessionCookieValue, verifySessionCookieValue (async), buildSessionCookieHeader, buildClearSessionCookieHeader.
+    * كوكي HttpOnly + SameSite=Lax، Max-Age 7 أيام، Secure في الإنتاج.
+  - POST /api/auth/login: يتحقق من بيانات الاعتماد عبر verifyPassword (bcrypt)، يبوّب على isActive/isLocked/lockedUntil، يضبط الكوكي.
+  - POST /api/auth/logout: يمسح الكوكي.
+  - GET /api/auth/me: يرجع المستخدم الحالي.
+  - src/middleware.ts: يبوّب /api/admin/* خلف كوكي جلسة صالح، 401 JSON بدونه.
+  - login-view.tsx: بوابة دخول كاملة الشاشة مع تعبئة سريعة للحسابات التجريبية.
+  - home-view.tsx: زر «دخول لوحة الإدارة» يفحص /api/auth/me أولًا ويوجّه للدخول.
+  - admin-shell TopBar: عرض اسم المستخدم + زر خروج.
+  - تخزين authUser/authChecked في متجر التطبيق.
+- واجهت عيبين في وقت التشغيل بعد الدمج الأول (PR #22):
+  1. Edge runtime لا يدعم Node 'crypto' module → أعدت كتابة session.ts لـ Web Crypto API حصرًا.
+  2. /api/auth/me كان يستدعي verifySessionCookieValue دون await → 500. أضفت await.
+- أنشأت PR #23 لإصلاح العيبين، نجحت CI، دمجت (097d562).
+- تحقق end-to-end بـ agent-browser:
+  * زر «دخول لوحة الإدارة» → تظهر شاشة الدخول (لا وصول مباشر للإدارة).
+  * تعبئة admin + Demo1234! → الدخول ناجح → لوحة الإدارة تظهر.
+  * رأس الإدارة يعرض «مدير نظام تجريبي» + وسم demo.
+  * زر «خروج» → يعود للرئيسية.
+  * لا أخطاء console.
+- تحقق API: 401 بلا كوكي، 200 للدخول، 200 للوحة، 200 لـ /me، 200 للخروج.
+
+Stage Summary:
+- الفجوة F14 (الإدارة متاحة بدون مصادقة) معالجة بالكامل.
+- Issue #21 مغلقة، PR #22 + PR #23 مدموجان في develop (097d562).
+- جميع مسارات /api/admin/* محمية خادمياً خلف كوكي جلسة موقّع.
+- واجهة دخول + زر خروج + عرض المستخدم المصادق منفذة.
+- مصفوفة المتطلبات: REQ-27-001 (جزء المصادقة والجلسات)، REQ-16-001 (جزء إنفاذ خادمي للـAPI)، REQ-01-004 (جزء الحوكمة).
+- الخطوة التالية: F03 (نماذج إنشاء التشريع/التعديل) ثم F04 (روابط مستقرة).
