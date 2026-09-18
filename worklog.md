@@ -186,3 +186,40 @@ Stage Summary:
 - إنشاء التشريع يعمل من الواجهة مع تحقق خادمي وعميلي + AuditLog.
 - مصفوفة المتطلبات: REQ-05-001 منفذة، REQ-22-001 (جزء الإضافة) منفذ.
 - الخطوة التالية: F03 الجزء 2 (وثيقة التعديل) أو F04 (روابط مستقرة).
+
+---
+
+Task ID: F04
+Agent: main (session continuation)
+Task: روابط مستقرة لصفحات التشريعات (F04 / REQ-19-001)
+
+Work Log:
+- راجعت الحالة: develop=1f02df2، 14/15 فجوة مصححة (F03p1 منفذ)، F04 آخر فجوة حرجة.
+- حددت أن التطبيق يعتمد على تنقل Zustand بمسار واحد `/`، فلا يمكن مشاركة رابط تشريع مباشرة.
+- أنشأت GitHub Issue #30 «روابط مستقرة لصفحات التشريعات (F04 / REQ-19-001)».
+- أنشأت فرع fix/30-stable-legislation-urls من develop ونفّذت:
+  - استخراج src/components/app-shell.tsx: مكوّن AppShell مشترك (Header + ViewRouter + Footer + ReadingProgress + KeyboardShortcuts).
+  - تبسيط src/app/page.tsx إلى `return <AppShell />`.
+  - إنشاء src/app/l/[slug]/page.tsx: مسار ديناميكي يستدعي openLegislation(slug) عند التحميل لترطيب المتجر، ثم يعرض AppShell.
+  - تحديث ShareDialog ليقبل prop `slug` ويبني الرابط كـ `<origin>/l/<slug>` بدل `window.location.href`.
+  - تمرير `slug={data.slug}` إلى ShareDialog في legislation-detail-view.
+  - تحديث handleCopyLink لينسخ `<origin>/l/<slug>` المستقر.
+- نجح bun run lint (بعد إزالة eslint-disable غير اللازم).
+- دفعت الفرع وأنشأت PR #31 إلى develop.
+- نجحت فحوص CI: Lint ✓, Type Check ✓, Build ✓, Issue link ✓.
+- دمجت PR #31 (squash) إلى develop: commit f05c27e.
+- أغلقت Issue #30.
+- أعدت main محاذٍا لـ origin/develop وأعدت تشغيل خادم التطوير.
+- تحقق end-to-end بـ agent-browser:
+  * زيارة /l/constitution-2001 مباشرة → يُحمّل «دستور الجمهورية اليمنية» فورًا.
+  * URL يبقى ثابتًا http://localhost:3000/l/constitution-2001.
+  * تبويبات التشريع (النظرة العامة، المواد، الملاحق) تظهر.
+  * زر «مشاركة» يفتح حوارًا يعرض رابطًا http://localhost:3000/l/constitution-2001 (ليس /).
+  * لا أخطاء console.
+
+Stage Summary:
+- الفجوة F04 (الروابط غير مستقرة) معالجة بالكامل — آخر فجوة حرجة.
+- Issue #30 مغلقة، PR #31 مدموج في develop (f05c27e).
+- جميع الفجوات الحرجة الـ14 الأصلية معالجة الآن (F01-F14)، إضافة إلى F03p1.
+- مصفوفة المتطلبات: REQ-19-001 منفذة، REQ-20-001 (روابط نتائج البحث) جزئيًا (الروابط للبحث معلقة).
+- الخطوة التالية: F03p2 (وثيقة تعديل جديدة) أو تحسينات إضافية (روابط البحث، عارض PDF، إلخ).
