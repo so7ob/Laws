@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner'
 import { relativeTime } from '@/lib/constants'
 import { arNum, EmptyState, ErrorState, SectionHeader } from '../admin-shared'
+import { CreateUserDialog } from './create-user-dialog'
 
 interface Resp {
   items: any[]
@@ -77,13 +78,7 @@ export function UsersSection() {
               <RefreshCcw className={loading ? 'size-4 animate-spin' : 'size-4'} />
               تحديث
             </Button>
-            <Button
-              size="sm"
-              onClick={() => toast.info('قريبًا', { description: 'إضافة مستخدم جديد' })}
-            >
-              <Plus className="size-4" />
-              إضافة مستخدم
-            </Button>
+            <CreateUserDialog onCreated={load} />
           </>
         }
       />
