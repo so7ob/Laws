@@ -23,6 +23,7 @@ import {
   Home,
   Menu,
   ShieldCheck,
+  LogOut,
   BookMarked,
   FileEdit,
 } from 'lucide-react'
@@ -157,7 +158,23 @@ function SidebarContent() {
 function TopBar({ onOpenMobile }: { onOpenMobile: () => void }) {
   const adminSection = useAppStore((s) => s.adminSection)
   const goHome = useAppStore((s) => s.goHome)
+  const authUser = useAppStore((s) => s.authUser)
+  const setAuthUser = useAppStore((s) => s.setAuthUser)
   const title = SECTION_TITLES[adminSection] || 'لوحة الإدارة'
+  const [loggingOut, setLoggingOut] = React.useState(false)
+
+  async function handleLogout() {
+    setLoggingOut(true)
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // best-effort
+    } finally {
+      setAuthUser(null)
+      goHome()
+      setLoggingOut(false)
+    }
+  }
 
   return (
     <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
@@ -172,10 +189,26 @@ function TopBar({ onOpenMobile }: { onOpenMobile: () => void }) {
           <Menu className="size-5" />
         </Button>
         <h1 className="text-lg font-bold text-secondary flex-1">{title}</h1>
+        {authUser && (
+          <span className="hidden sm:inline text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5 inline ml-1" />
+            {authUser.fullName || authUser.username}
+          </span>
+        )}
         <Badge variant="secondary" className="gap-1">
           <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
           demo
         </Badge>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          title="تسجيل الخروج"
+        >
+          <LogOut className={loggingOut ? 'size-4 animate-spin' : 'size-4'} />
+          <span className="hidden sm:inline">خروج</span>
+        </Button>
         <Button variant="outline" size="sm" onClick={goHome}>
           <Home className="size-4" />
           <span className="hidden sm:inline">عودة للموقع</span>

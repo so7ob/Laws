@@ -107,11 +107,60 @@ const FEATURED_QUOTES = [
 export function HomeView() {
   const navigate = useAppStore((s) => s.navigate)
   const openLegislation = useAppStore((s) => s.openLegislation)
+  const authUser = useAppStore((s) => s.authUser)
+  const setAuthUser = useAppStore((s) => s.setAuthUser)
+  const setAuthChecked = useAppStore((s) => s.setAuthChecked)
   const [stats, setStats] = useState<Stats | null>(null)
   const [news, setNews] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [heroSearch, setHeroSearch] = useState('')
   const [featuredQuote, setFeaturedQuote] = useState(0)
+  const [adminBusy, setAdminBusy] = useState(false)
+
+  /**
+   * Enter the admin panel. If a session already exists (reflected in the
+   * store), go straight in. Otherwise probe /api/auth/me; if there is a
+   * live session, hydrate the store and enter; if not, route to the login
+   * view so the user can authenticate.
+   */
+  async function handleEnterAdmin() {
+    if (authUser) {
+      navigate('admin')
+      return
+    }
+    setAdminBusy(true)
+    try {
+      const res = await fetch('/api/auth/me')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.user) {
+          const mapped = {
+            id: data.user.id,
+            username: data.user.username,
+            email: data.user.email,
+            fullName: data.user.fullName,
+            roles: (data.user.roles || []).map(
+              (r: { code: string; nameAr: string }) => ({
+                code: r.code,
+                nameAr: r.nameAr,
+              })
+            ),
+          }
+          setAuthUser(mapped)
+          setAuthChecked(true)
+          navigate('admin')
+          return
+        }
+      }
+      // No valid session — route to login.
+      setAuthChecked(true)
+      navigate('login')
+    } catch {
+      navigate('login')
+    } finally {
+      setAdminBusy(false)
+    }
+  }
 
   useEffect(() => {
     Promise.all([
@@ -558,7 +607,7 @@ export function HomeView() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
-                  onClick={() => navigate('admin')}
+                  onClick={handleEnterAdmin}
                   className="bg-primary hover:bg-primary/90"
                 >
                   <Shield className="h-4 w-4 ml-1.5" />

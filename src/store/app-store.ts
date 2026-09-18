@@ -15,12 +15,21 @@ export type View =
   | 'news-detail'
   | 'page'
   | 'admin'
+  | 'login'
   | 'account'
   | 'compare'
   | 'stats'
   | 'timeline'
   | 'glossary'
   | 'faq'
+
+interface AuthUser {
+  id: string
+  username: string
+  email: string
+  fullName: string
+  roles: { code: string; nameAr: string }[]
+}
 
 interface AppState {
   view: View
@@ -30,6 +39,11 @@ interface AppState {
   activeTab: string // tab within detail page
   // admin sub-view
   adminSection: string
+  // auth
+  authUser: AuthUser | null
+  authChecked: boolean
+  setAuthUser: (u: AuthUser | null) => void
+  setAuthChecked: (c: boolean) => void
 
   // search
   searchQuery: string
@@ -56,6 +70,10 @@ export const useAppStore = create<AppState>((set) => ({
   versionId: null,
   activeTab: 'articles',
   adminSection: 'dashboard',
+  authUser: null,
+  authChecked: false,
+  setAuthUser: (authUser) => set({ authUser }),
+  setAuthChecked: (authChecked) => set({ authChecked }),
   searchQuery: '',
   filters: {},
   setView: (view) => set({ view }),
