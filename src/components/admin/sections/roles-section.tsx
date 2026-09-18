@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { arNum, EmptyState, ErrorState, SectionHeader, BarRow } from '../admin-shared'
+import { CreateRoleDialog } from './create-role-dialog'
 
 interface Resp {
   items: any[]
@@ -235,13 +236,7 @@ export function RolesSection() {
               <RefreshCcw className={loading ? 'size-4 animate-spin' : 'size-4'} />
               تحديث
             </Button>
-            <Button
-              size="sm"
-              onClick={() => toast.info('قريبًا', { description: 'إنشاء دور جديد' })}
-            >
-              <ShieldAlert className="size-4" />
-              دور جديد
-            </Button>
+            <CreateRoleDialog onCreated={load} />
           </>
         }
       />
