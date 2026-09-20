@@ -456,6 +456,9 @@ function InfoBox({ icon: Icon, label, value }: { icon: any; label: string; value
 }
 
 function QuickStat({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
+  // Coerce to a number; the API may omit count fields for some legislations
+  // (e.g. newly created ones), which would crash .toLocaleString().
+  const safeValue = typeof value === 'number' && Number.isFinite(value) ? value : 0
   return (
     <Card className="border-border/60">
       <CardContent className="p-4 flex items-center gap-3">
@@ -464,7 +467,7 @@ function QuickStat({ icon: Icon, label, value }: { icon: any; label: string; val
         </div>
         <div>
           <div className="text-xl font-bold text-secondary article-number">
-            {value.toLocaleString('ar-EG')}
+            {safeValue.toLocaleString('ar-EG')}
           </div>
           <div className="text-xs text-muted-foreground">{label}</div>
         </div>
