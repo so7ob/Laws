@@ -37,6 +37,7 @@ import {
 } from '@/lib/constants'
 import { arNum, EmptyState, ErrorState, SectionHeader } from '../admin-shared'
 import { CreateAmendmentDialog } from './create-amendment-dialog'
+import { AmendmentOperationsDialog } from './amendment-operations-dialog'
 
 interface Resp {
   items: any[]
@@ -51,25 +52,14 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   archived: { label: 'مؤرشف', color: 'text-slate-600 bg-slate-100 border-slate-200' },
 }
 
-function OperationsList({ count, docId }: { count: number; docId: string }) {
+function OperationsList({ count, docId, docTitle }: { count: number; docId: string; docTitle: string }) {
   return (
     <div className="space-y-2 mt-3 border-t pt-3">
       <div className="flex items-center justify-between text-xs">
         <span className="font-semibold text-muted-foreground">
           قائمة العمليات ({arNum(count)})
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={() =>
-            toast.info('قريبًا', {
-              description: 'عرض تفاصيل العمليات الفردية قيد التطوير',
-            })
-          }
-        >
-          عرض التفاصيل
-        </Button>
+        <AmendmentOperationsDialog amendmentId={docId} amendmentTitle={docTitle} />
       </div>
       {count === 0 ? (
         <p className="text-xs text-muted-foreground">لا توجد عمليات مسجّلة.</p>
@@ -230,6 +220,7 @@ function AmendmentCard({ doc, onApplied }: { doc: any; onApplied: () => void }) 
             <OperationsList
               count={doc._count?.operations ?? doc.operationCount ?? 0}
               docId={doc.id}
+              docTitle={doc.title}
             />
 
             {/* Apply / transition actions */}
